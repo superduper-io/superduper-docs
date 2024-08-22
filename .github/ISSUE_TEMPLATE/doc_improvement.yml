@@ -1,0 +1,21 @@
+name: Documentation improvement
+description: Help us improve the documentation
+title: '[DOC]: '
+labels: ['doc']
+
+body:
+- type: textarea
+  attributes:
+    label: What's wrong?
+    description: |
+      Tell us what's missing, wrong, or just plain confusing.
+      You can also make changes and open a pull request!
+
+  validations:
+    required: true
+
+- type: textarea
+  attributes:
+    label: How could it be better?
+    description: >
+      How we could fix the documentation to solve this?
