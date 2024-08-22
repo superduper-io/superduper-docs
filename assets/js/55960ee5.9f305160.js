@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunknewdocs=self.webpackChunknewdocs||[]).push([[7532],{350:s=>{s.exports=JSON.parse('[{"label":"quickstart","permalink":"/superduper-docs/docs/tags/quickstart","count":1}]')}}]);
