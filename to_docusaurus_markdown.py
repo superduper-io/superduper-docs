@@ -78,31 +78,25 @@ def render_notebook_as_chunks(nb):
 
 
 if __name__ == '__main__':
-    directory = sys.argv[1]
+    file = sys.argv[1]
+    directory = os.path.dirname(file)
+    file = os.path.basename(file)
+    with open(f'{directory}/{file}') as f:
+        content = json.load(f)
+    print(file)
+    head = content['cells'][0]['source'][0].strip()
+    if head == '<!-- TABS -->':
+        title = content['cells'][0]['source'][1].strip().replace('# ', '')
+        print(f'processing {file} with tabs...')
+        chunks = render_notebook_as_chunks(content)
+        md = render_chunks_as_md(chunks)
+        target_filename = file.replace('.ipynb', '.md')
 
-    FILES = os.listdir(directory)
+        md = f'---\nsidebar_label: {title}\nfilename: {target_filename}\n---\n' + md
 
-    for file in FILES:
-        if file.startswith('_'):
-            continue
-        if not file.endswith('.ipynb'):
-            continue
-        with open(f'{directory}/{file}') as f:
-            content = json.load(f)
-        print(file)
-        head = content['cells'][0]['source'][0].strip()
-        if head == '<!-- TABS -->':
-            title = content['cells'][0]['source'][1].strip().replace('# ', '')
-            print(f'processing {file} with tabs...')
-            chunks = render_notebook_as_chunks(content)
-            md = render_chunks_as_md(chunks)
-            target_filename = file.replace('.ipynb', '.md')
-
-            md = f'---\nsidebar_label: {title}\nfilename: {target_filename}\n---\n' + md
-
-            with open(f'{directory}/{target_filename}', 'w') as f:
-                f.write(md)
-        else:
-            print(f'processing {directory}/{file} with Jupyter convert...')
-            os.system(f'jupyter-nbconvert --clear-output {directory}/{file}')
-            os.system(f'jupyter-nbconvert --to=markdown {directory}/{file}')
+        with open(f'{directory}/{target_filename}', 'w') as f:
+            f.write(md)
+    else:
+        print(f'processing {directory}/{file} with Jupyter convert...')
+        os.system(f'jupyter-nbconvert --clear-output {directory}/{file}')
+        os.system(f'jupyter-nbconvert --to=markdown {directory}/{file}')

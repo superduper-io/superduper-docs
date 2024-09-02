@@ -1,6 +1,6 @@
 ---
 sidebar_label: Retrieval augmented generation
-filename: retrieval_augmented_generation.md
+filename: build.md
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
@@ -30,7 +30,7 @@ db = superduper('mongomock:///test_db')
 <Tabs>
     <TabItem value="Text" label="Text" default>
         ```python
-        !curl -O https://superduper-public-demo.s3.amazonaws.com/text.json
+        # !curl -O https://superduperdb-public-demo.s3.amazonaws.com/text.json
         import json
         
         with open('text.json', 'r') as f:
@@ -39,7 +39,7 @@ db = superduper('mongomock:///test_db')
     </TabItem>
     <TabItem value="PDF" label="PDF" default>
         ```python
-        !curl -O https://superduper-public-demo.s3.amazonaws.com/pdfs.zip && unzip -o pdfs.zip
+        !curl -O https://superduperdb-public-demo.s3.amazonaws.com/pdfs.zip && unzip -o pdfs.zip
         import os
         
         data = [f'pdfs/{x}' for x in os.listdir('./pdfs') if x.endswith('.pdf')]        
@@ -58,10 +58,7 @@ After turning on auto_schema, we can directly insert data, and superduper will a
 ```python
 from superduper import Document
 
-table_or_collection = db['documents']
-
-ids = db.execute(table_or_collection.insert([Document(data) for data in datas]))
-select = table_or_collection.select()
+ids = db.execute(db['docs'].insert([Document(data) for data in datas]))
 ```
 
 <!-- TABS -->
@@ -82,7 +79,7 @@ won't be necessary.
         
         CHUNK_SIZE = 200
         
-        @model(flatten=True, model_update_kwargs={'document_embedded': False})
+        @model(flatten=True, model_update_kwargs={})
         def chunker(text):
             text = text.split()
             chunks = [' '.join(text[i:i + CHUNK_SIZE]) for i in range(0, len(text), CHUNK_SIZE)]
@@ -113,12 +110,11 @@ from superduper import Listener
 
 upstream_listener = Listener(
     model=chunker,
-    select=select,
+    select=db['docs'].select(),
     key='x',
-    uuid="chunk",
+    uuid="chunker",
+    identifier='chunker',
 )
-
-db.apply(upstream_listener)
 ```
 
 ## Select outputs of upstream listener
@@ -129,11 +125,6 @@ features, or chunking your data. You can use this query to
 operate on those outputs.
 :::
 
-```python
-indexing_key = upstream_listener.outputs_key
-select = upstream_listener.outputs_select
-```
-
 <!-- TABS -->
 ## Build text embedding model
 
@@ -141,7 +132,8 @@ select = upstream_listener.outputs_select
 <Tabs>
     <TabItem value="OpenAI" label="OpenAI" default>
         ```python
-        !pip install openai
+        import os
+        os.environ['OPENAI_API_KEY'] = 'sk-<secret>'
         from superduper_openai import OpenAIEmbedding
         
         embedding_model = OpenAIEmbedding(identifier='text-embedding-ada-002')        
@@ -175,10 +167,6 @@ select = upstream_listener.outputs_select
         ```
     </TabItem>
 </Tabs>
-```python
-print(len(embedding_model.predict("What is superduper")))
-```
-
 ## Create vector-index
 
 ```python
@@ -186,29 +174,25 @@ from superduper import VectorIndex, Listener
 
 vector_index_name = 'vector-index'
 
-jobs, _ = db.add(
+vector_index = \
     VectorIndex(
         vector_index_name,
         indexing_listener=Listener(
-            key=indexing_key,      # the `Document` key `model` should ingest to create embedding
-            select=select,       # a `Select` query telling which data to search over
+            key=upstream_listener.outputs,      # the `Document` key `model` should ingest to create embedding
+            select=db[upstream_listener.outputs].select(),       # a `Select` query telling which data to search over
             model=embedding_model,         # a `_Predictor` how to convert data to embeddings
-            uuid="embedding"
+            uuid="embedding-listener",
+            identifier='embedding-listener',
+            upstream=[upstream_listener],
         )
     )
-)
-query_table_or_collection = select.table_or_collection
-```
-
-```python
-query = "Tell me about the superduper"
 ```
 
 <!-- TABS -->
 ## Create Vector Search Model
 
 ```python
-item = {indexing_key: '<var:query>'}
+item = {'_outputs__chunker': '<var:query>'}
 ```
 
 ```python
@@ -216,15 +200,11 @@ from superduper.components.model import QueryModel
 
 vector_search_model = QueryModel(
     identifier="VectorSearch",
-    select=query_table_or_collection.like(item, vector_index=vector_index_name, n=5).select(),
+    select=db[upstream_listener.outputs].like(item, vector_index=vector_index_name, n=5).select(),
     # The _source is the identifier of the upstream data, which can be used to locate the data from upstream sources using `_source`.
-    postprocess=lambda docs: [{"text": doc[indexing_key], "_source": doc["_source"]} for doc in docs],
+    postprocess=lambda docs: [{"text": doc['_outputs__chunker'], "_source": doc["_source"]} for doc in docs],
     db=db
 )
-```
-
-```python
-vector_search_model.predict(query=query)
 ```
 
 <!-- TABS -->
@@ -234,7 +214,6 @@ vector_search_model.predict(query=query)
 <Tabs>
     <TabItem value="OpenAI" label="OpenAI" default>
         ```python
-        !pip install openai
         from superduper_openai import OpenAIChatCompletion
         
         llm = OpenAIChatCompletion(identifier='llm', model='gpt-3.5-turbo')        
@@ -242,7 +221,6 @@ vector_search_model.predict(query=query)
     </TabItem>
     <TabItem value="Anthropic" label="Anthropic" default>
         ```python
-        !pip install anthropic
         from superduper_anthropic import AnthropicCompletions
         import os
         
@@ -258,7 +236,6 @@ vector_search_model.predict(query=query)
     </TabItem>
     <TabItem value="vLLM" label="vLLM" default>
         ```python
-        !pip install vllm
         from superduper_vllm import VllmModel
         
         predict_kwargs = {
@@ -281,7 +258,6 @@ vector_search_model.predict(query=query)
     </TabItem>
     <TabItem value="Transformers" label="Transformers" default>
         ```python
-        !pip install transformers datasets bitsandbytes accelerate
         from superduper_transformers import LLM
         
         llm = LLM.from_pretrained("mistralai/Mistral-7B-Instruct-v0.2", load_in_8bit=True, device_map="cuda", identifier="llm", predict_kwargs=dict(max_new_tokens=128))        
@@ -289,19 +265,13 @@ vector_search_model.predict(query=query)
     </TabItem>
     <TabItem value="Llama.cpp" label="Llama.cpp" default>
         ```python
-        !pip install llama_cpp_python
-        # !huggingface-cli download TheBloke/Mistral-7B-Instruct-v0.2-GGUF mistral-7b-instruct-v0.2.Q4_K_M.gguf --local-dir . --local-dir-use-symlinks False
+        !huggingface-cli download TheBloke/Mistral-7B-Instruct-v0.2-GGUF mistral-7b-instruct-v0.2.Q4_K_M.gguf --local-dir . --local-dir-use-symlinks False
         
         from superduper_llama_cpp.model import LlamaCpp
         llm = LlamaCpp(identifier="llm", model_name_or_path="mistral-7b-instruct-v0.2.Q4_K_M.gguf")        
         ```
     </TabItem>
 </Tabs>
-```python
-# test the llm model
-llm.predict("Tell me about the superduper")
-```
-
 ## Answer question with LLM
 
 ```python
@@ -314,14 +284,12 @@ prompt_template = (
     "Here's the question: {query}"
 )
 
-
 @model
 def build_prompt(query, docs):
     chunks = [doc["text"] for doc in docs]
     context = "\n\n".join(chunks)
     prompt = prompt_template.format(context=context, query=query)
     return prompt
-    
 
 # We build a graph to handle the entire pipeline
 
@@ -335,19 +303,42 @@ prompt = build_prompt(query=in_, docs=vector_search_results)
 answer = llm(prompt)
 # create a graph, and the graph output is the answer
 rag = answer.to_graph("rag")
-print(rag.predict(query)[0])
 ```
 
 By applying the RAG model to the database, it will subsequently be accessible for use in other services.
 
 ```python
-db.apply(rag)
+from superduper import Application
+
+app = Application(
+    'rag-app',
+    components=[
+        upstream_listener,
+        vector_index,
+        vector_search_model,
+        rag,
+    ]
+)
+
+db.apply(app)
 ```
 
 You can now load the model elsewhere and make predictions using the following command.
 
 ```python
-rag = db.load("model", 'context_llm')
-print(rag.predict("Tell me about the superduper")[0])
+rag = db.load("model", 'rag')
+print(rag.predict("Tell me about superduper")[0])
+```
+
+## Create template
+
+```python
+from superduper import Template
+
+template = Template('rag-template', template=app, substitutions={'docs': 'collection'})
+```
+
+```python
+template.export('.')
 ```
 

@@ -1,6 +1,6 @@
 ---
 sidebar_label: Multimodal vector search - Image
-filename: multimodal_vector_search_image.md
+filename: build.md
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
@@ -27,7 +27,7 @@ db = superduper('mongomock:///test_db')
 ## Get useful sample data
 
 ```python
-!curl -O https://superduper-public-demo.s3.amazonaws.com/images.zip && unzip images.zip
+!curl -O https://superduperdb-public-demo.s3.amazonaws.com/images.zip && unzip images.zip
 import os
 from PIL import Image
 
@@ -36,21 +36,7 @@ data = [ Image.open(path) for path in data]
 ```
 
 ```python
-datas = [{'img': d} for d in data[:100]]
-```
-
-<!-- TABS -->
-## Insert simple data
-
-After turning on auto_schema, we can directly insert data, and superduper will automatically analyze the data type, and match the construction of the table and datatype.
-
-```python
-from superduper import Document
-
-table_or_collection = db['documents']
-
-ids = db.execute(table_or_collection.insert([Document(data) for data in datas]))
-select = table_or_collection.select()
+data = [{'img': d} for d in data[:100]]
 ```
 
 ## Build multimodal embedding models
@@ -76,9 +62,10 @@ Then define two models, one for text embedding and one for image embedding.
 
 ```python
 !pip install git+https://github.com/openai/CLIP.git
+!pip install ../../plugins/torch
 import clip
 from superduper import vector
-from superduper.ext.torch import TorchModel
+from superduper_torch import TorchModel
 
 # Load the CLIP model and obtain the preprocessing function
 model, preprocess = clip.load("RN50", device='cpu')
@@ -94,7 +81,7 @@ compatible_model = TorchModel(
 )
 
 # Create a TorchModel for visual encoding
-model = TorchModel(
+embedding_model = TorchModel(
     identifier='clip_image',  # Unique identifier for the model
     object=model.visual,  # Visual part of the CLIP model    
     preprocess=preprocess, # Visual preprocessing using CLIP
@@ -119,26 +106,44 @@ vector_index_name = 'my-vector-index'
 ```python
 from superduper import VectorIndex, Listener
 
-jobs, _ = db.apply(
-    VectorIndex(
-        vector_index_name,
-        indexing_listener=Listener(
-            key=indexing_key,      # the `Document` key `model` should ingest to create embedding
-            select=select,       # a `Select` query telling which data to search over
-            model=embedding_model,         # a `_Predictor` how to convert data to embeddings
-        ),
-        compatible_listener=Listener(
-            key=compatible_key,      # the `Document` key `model` should ingest to create embedding
-            model=compatible_model,         # a `_Predictor` how to convert data to embeddings
-            active=False,
-            select=None,
-        )
+vector_index = VectorIndex(
+    vector_index_name,
+    indexing_listener=Listener(
+        key=indexing_key,                 # the `Document` key `model` should ingest to create embedding
+        select=db['docs'].select(),       # a `Select` query telling which data to search over
+        model=embedding_model,            # a `_Predictor` how to convert data to embeddings
+        identifier='indexing-listener',
+    ),
+    compatible_listener=Listener(
+        key=compatible_key,               # the `Document` key `model` should ingest to create embedding
+        model=compatible_model,           # a `_Predictor` how to convert data to embeddings
+        select=None,
+        identifier='compatible-listener',
     )
 )
 ```
 
 ```python
-query_table_or_collection = select.table_or_collection
+from superduper import Application
+
+application = Application(
+    'image-vector-search',
+    components=[vector_index],
+)
+
+db.apply(application)
+```
+
+## Add the data
+
+The order in which data is added is not important. *However* if your data requires a custom `Schema` in order to work, it's easier to add the `Application` first, and the data later. The advantage of this flexibility, is that once the `Application` is installed, it's waiting for incoming data, so that the `Application` is always up-to-date. This comes in particular handy with AI scenarios which need to respond to changing news.
+
+```python
+from superduper import Document
+
+table_or_collection = db['docs']
+
+ids = db.execute(table_or_collection.insert([Document(r) for r in data]))
 ```
 
 ## Perform a vector search
@@ -167,7 +172,7 @@ We can perform the vector searches using two types of data:
 Once we have this search target, we can execute a search as follows.
 
 ```python
-select = query_table_or_collection.like(item, vector_index=vector_index_name, n=5).select()
+select = db['docs'].like(item, vector_index=vector_index_name, n=5).select()
 results = list(db.execute(select))
 ```
 
@@ -179,12 +184,17 @@ for result in results:
     display(result[indexing_key])
 ```
 
-## Check the system stays updated
-
-You can add new data; once the data is added, all related models will perform calculations according to the underlying constructed model and listener, simultaneously updating the vector index to ensure that each query uses the latest data.
+## Create a `Template`
 
 ```python
-new_datas = [{'img': d} for d in data[100:200]]
-ids = db.execute(table_or_collection.insert(new_datas))
+from superduper import Template
+
+template = Template(
+    'image-vector-search',
+    template=application,
+    substitutions={'docs': 'table'},
+)
+
+template.export('.')
 ```
 

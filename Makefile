@@ -14,3 +14,15 @@ gen_docs: ## Generate Docs and API
 	npm i --legacy-peer-deps && npm run build
 	@echo "Build finished. The HTML pages are in docs/hr/build"
 
+DIRECTORY := ./templates
+FILES := $(shell ls $(DIRECTORY))
+
+DIRECTORY := ./templates
+FILES := $(shell ls $(DIRECTORY))
+
+compile_docs: ## Convert templates to markdown content
+	@for file in $(FILES); do \
+		echo "Processing $(DIRECTORY)/$$file..."; \
+		python to_docusaurus_markdown.py $(DIRECTORY)/$$file/build.ipynb; \
+		mv $(DIRECTORY)/$$file/build.md content/templates/$$file.md; \
+	done

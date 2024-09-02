@@ -1,6 +1,6 @@
 ---
 sidebar_label: Text Vector Search
-filename: text_vector_search.md
+filename: build.md
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
@@ -9,18 +9,19 @@ import TabItem from '@theme/TabItem';
 <!-- TABS -->
 # Text Vector Search
 
+You'll find this example as well as the saved template in the main repository of `superduper`.
+See [here](https://github.com/superduper-io/superduper/tree/main/templates/text_vector_search).
+
+If you'd like to modify the template, or practice building it yourself, then you can rerun the `build.ipynb` notebook
+in the template directory
+
 <!-- TABS -->
 ## Connect to superduper
-
-:::note
-Note that this is only relevant if you are running superduper in development mode.
-Otherwise refer to "Configuring your production system".
-:::
 
 ```python
 from superduper import superduper
 
-db = superduper('mongomock:///test_db')
+db = superduper('mongomock://test_db')
 ```
 
 <!-- TABS -->
@@ -30,7 +31,7 @@ db = superduper('mongomock:///test_db')
 <Tabs>
     <TabItem value="Text" label="Text" default>
         ```python
-        !curl -O https://superduper-public-demo.s3.amazonaws.com/text.json
+        !curl -O https://superduperdb-public-demo.s3.amazonaws.com/text.json
         import json
         
         with open('text.json', 'r') as f:
@@ -39,7 +40,7 @@ db = superduper('mongomock:///test_db')
     </TabItem>
     <TabItem value="PDF" label="PDF" default>
         ```python
-        !curl -O https://superduper-public-demo.s3.amazonaws.com/pdfs.zip && unzip -o pdfs.zip
+        !curl -O https://superduperdb-public-demo.s3.amazonaws.com/pdfs.zip && unzip -o pdfs.zip
         import os
         
         data = [f'pdfs/{x}' for x in os.listdir('./pdfs') if x.endswith('.pdf')]        
@@ -84,15 +85,8 @@ from superduper.components.table import Table
 from superduper import Schema
 
 schema = Schema(identifier="schema", fields={"x": datatype})
-table_or_collection = Table("documents", schema=schema)
-db.apply(table_or_collection)
-```
-
-Inserting data, all fields will be matched with the schema for data conversion.
-
-```python
-db['documents'].insert(datas).execute()
-select = db['documents'].select()
+table = Table("docs", schema=schema)
+select = db['docs'].select()
 ```
 
 <!-- TABS -->
@@ -137,19 +131,18 @@ won't be necessary.
         ```
     </TabItem>
 </Tabs>
-Now we apply this chunker to the data by wrapping the chunker in `Listener`:
+Now we wrap this chunker as a `Listener`, so that it processes incoming data
 
 ```python
 from superduper import Listener
 
 upstream_listener = Listener(
     model=chunker,
-    select=select,
+    select=db['docs'].select(),
     key='x',
     uuid="chunk",
+    identifier='chunker',
 )
-
-db.apply(upstream_listener)
 ```
 
 ## Select outputs of upstream listener
@@ -161,8 +154,8 @@ operate on those outputs.
 :::
 
 ```python
-indexing_key = upstream_listener.outputs_key
-select = upstream_listener.outputs_select
+indexing_key = upstream_listener.outputs
+indexing_key
 ```
 
 <!-- TABS -->
@@ -172,8 +165,10 @@ select = upstream_listener.outputs_select
 <Tabs>
     <TabItem value="OpenAI" label="OpenAI" default>
         ```python
-        !pip install openai
         from superduper_openai import OpenAIEmbedding
+        import os
+        
+        os.environ['OPENAI_API_KEY'] = 'sk-<secret>'
         
         embedding_model = OpenAIEmbedding(identifier='text-embedding-ada-002')        
         ```
@@ -219,20 +214,46 @@ vector_index_name = 'my-vector-index'
 ```python
 from superduper import VectorIndex, Listener
 
-jobs, _ = db.apply(
-    VectorIndex(
-        vector_index_name,
-        indexing_listener=Listener(
-            key=indexing_key,      # the `Document` key `model` should ingest to create embedding
-            select=select,       # a `Select` query telling which data to search over
-            model=embedding_model,         # a `_Predictor` how to convert data to embeddings
-        )
+vector_index = VectorIndex(
+    vector_index_name,
+    indexing_listener=Listener(
+        key=indexing_key,              # the `Document` key `model` should ingest to create embedding
+        select=db[indexing_key].select(),                 # a `Select` query telling which data to search over
+        model=embedding_model,         # a `_Predictor` how to convert data to embeddings
+        identifier=f'{embedding_model.identifier}-listener',
+        upstream=[table, upstream_listener],              # this makes sure that the table is already set up when the other components are triggered
     )
 )
 ```
 
 ```python
-query_table_or_collection = select.table_or_collection
+from superduper import Application
+
+application = Application(
+    'text-vector-search', 
+    components=[
+        table,
+        upstream_listener,
+        vector_index,
+    ]
+)
+```
+
+```python
+db.apply(application)
+```
+
+```python
+application.info(verbosity=2)
+```
+
+```python
+db['docs'].insert(datas).execute()
+select = db['docs'].select()
+```
+
+```python
+db.databackend.db.list_collection_names()
 ```
 
 ## Perform a vector search
@@ -240,17 +261,34 @@ query_table_or_collection = select.table_or_collection
 ```python
 from superduper import Document
 # Perform the vector search based on the query
-item = Document({indexing_key: "Tell me about the superduper"})
+item = Document({indexing_key: "Tell me about vector-search"})
 ```
 
 ```python
-select = query_table_or_collection.like(item, vector_index=vector_index_name, n=5).select()
-results = list(db.execute(select))
+results = db[indexing_key].like(item, vector_index=vector_index_name, n=10).select().execute()
 ```
 
 ```python
 for result in results:
     print("\n", '-' * 20, '\n')
     print(Document(result.unpack())[indexing_key])
+```
+
+```python
+from superduper import Template
+
+t = Template(
+    'vector-search',
+    template=application,
+    substitutions={'docs': 'table_name'},
+)
+```
+
+```python
+t.export('.')
+```
+
+```python
+!cat component.json | jq .
 ```
 

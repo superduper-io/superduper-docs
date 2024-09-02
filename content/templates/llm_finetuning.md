@@ -1,6 +1,6 @@
 ---
 sidebar_label: Fine tune LLM on database
-filename: fine_tune_llm_on_database.md
+filename: build.md
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
@@ -21,12 +21,6 @@ Otherwise refer to "Configuring your production system".
 from superduper import superduper
 
 db = superduper('mongomock:///test_db')
-```
-
-## Install related dependencies
-
-```python
-!pip install superduper_transformers
 ```
 
 <!-- TABS -->
@@ -61,6 +55,7 @@ The following are examples of training data in different formats.
     <TabItem value="Prompt-Response" label="Prompt-Response" default>
         ```python
         from datasets import load_dataset
+        
         from superduper.base.document import Document
         dataset_name = "mosaicml/instruct-v3"
         dataset = load_dataset(dataset_name)
@@ -183,7 +178,7 @@ After turning on auto_schema, we can directly insert data, and superduper will a
 ```python
 from superduper import Document
 
-table_or_collection = db['documents']
+table_or_collection = db['docs']
 
 ids = db.execute(table_or_collection.insert([Document(data) for data in datas]))
 select = table_or_collection.select()
@@ -316,5 +311,15 @@ There are two methods to load a trained model:
 </Tabs>
 ```python
 llm.predict(input_text, max_new_tokens=200)
+```
+
+```python
+from superduper import Template
+
+t = Template('llm-finetune', template=llm, substitutions={'docs': 'collection', model_name: 'model_name'})
+```
+
+```python
+t.export('.')
 ```
 

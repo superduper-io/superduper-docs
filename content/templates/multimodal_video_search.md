@@ -1,6 +1,6 @@
 ---
 sidebar_label: Multimodal vector search - Video
-filename: multimodal_vector_search_video.md
+filename: build.md
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
@@ -12,32 +12,25 @@ import TabItem from '@theme/TabItem';
 <!-- TABS -->
 ## Connect to superduper
 
-:::note
-Note that this is only relevant if you are running superduper in development mode.
-Otherwise refer to "Configuring your production system".
-:::
-
 ```python
 from superduper import superduper
-
-db = superduper('mongomock:///test_db')
+  
+db = superduper('mongomock://test_db')
 ```
 
 <!-- TABS -->
 ## Get useful sample data
 
 ```python
-!curl -O https://superduper-public-demo.s3.amazonaws.com/videos.zip && unzip videos.zip
+!curl -O https://superduperdb-public-demo.s3.amazonaws.com/videos.zip && unzip videos.zip
 import os
+from superduper.ext.pillow import pil_image
 
 data = [f'videos/{x}' for x in os.listdir('./videos')]
 sample_datapoint = data[-1]
 
-from superduper.ext.pillow import pil_image
 chunked_model_datatype = pil_image
-```
 
-```python
 datas = [{'x': d} for d in data[:3]]
 ```
 
@@ -66,15 +59,15 @@ from superduper.components.table import Table
 from superduper import Schema
 
 schema = Schema(identifier="schema", fields={"x": datatype})
-table_or_collection = Table("documents", schema=schema)
-db.apply(table_or_collection)
+table = Table("docs", schema=schema)
 ```
 
-Inserting data, all fields will be matched with the schema for data conversion.
+```python
+db.apply(table)
+```
 
 ```python
-db['documents'].insert(datas).execute()
-select = db['documents'].select()
+db['docs'].insert(datas).execute()
 ```
 
 <!-- TABS -->
@@ -88,7 +81,7 @@ won't be necessary.
 :::
 
 ```python
-!pip install opencv-python
+# !pip install opencv-python
 import cv2
 import tqdm
 from PIL import Image
@@ -98,7 +91,7 @@ from superduper import model, Schema
 
 @model(
     flatten=True,
-    model_update_kwargs={'document_embedded': False},
+    model_update_kwargs={},
 )
 def chunker(video_file):
     # Set the sampling frequency for frames
@@ -146,11 +139,15 @@ from superduper import Listener
 
 upstream_listener = Listener(
     model=chunker,
-    select=select,
+    select=db['docs'].select(),
     key='x',
-    uuid="chunk",
+    uuid='chunker',
+    identifier='chunker',
+    upstream=[table]
 )
+```
 
+```python
 db.apply(upstream_listener)
 ```
 
@@ -163,23 +160,23 @@ We define the output data type of a model as a vector for vector transformation.
     <TabItem value="MongoDB" label="MongoDB" default>
         ```python
         from superduper.components.vector_index import vector
-        output_datatpye = vector(shape=(1024,))        
+        output_datatype = vector(shape=(1024,))        
         ```
     </TabItem>
     <TabItem value="SQL" label="SQL" default>
         ```python
         from superduper.components.vector_index import sqlvector
-        output_datatpye = sqlvector(shape=(1024,))        
+        output_datatype = sqlvector(shape=(1024,))        
         ```
     </TabItem>
 </Tabs>
 Then define two models, one for text embedding and one for image embedding.
 
 ```python
-!pip install git+https://github.com/openai/CLIP.git
+# !pip install git+https://github.com/openai/CLIP.git
 import clip
 from superduper import vector
-from superduper.ext.torch import TorchModel
+from superduper_torch import TorchModel
 
 # Load the CLIP model and obtain the preprocessing function
 model, preprocess = clip.load("ViT-B/32", device='cpu')
@@ -190,7 +187,7 @@ compatible_model = TorchModel(
     object=model, # CLIP model
     preprocess=lambda x: clip.tokenize(x)[0],  # Model input preprocessing using CLIP 
     postprocess=lambda x: x.tolist(), # Convert the model output to a list
-    datatype=output_datatpye,  # Vector encoder with shape (1024,)
+    datatype=output_datatype,  # Vector encoder with shape (1024,)
     forward_method='encode_text', # Use the 'encode_text' method for forward pass 
 )
 
@@ -200,47 +197,53 @@ model = TorchModel(
     object=model.visual,  # Visual part of the CLIP model    
     preprocess=preprocess, # Visual preprocessing using CLIP
     postprocess=lambda x: x.tolist(), # Convert the output to a list 
-    datatype=output_datatpye, # Vector encoder with shape (1024,)
+    datatype=output_datatype, # Vector encoder with shape (1024,)
 )
 ```
 
 Because we use multimodal models, we define different keys to specify which model to use for embedding calculations in the vector_index.
 
-```python
-compatible_key = 'text' # we use text key for text embedding
-indexing_key = upstream_listener.outputs_key + '.image' # we use indexing_key for image embedding, use the image field of the result
-select = upstream_listener.outputs_select
-```
-
 ## Create vector-index
-
-```python
-vector_index_name = 'my-vector-index'
-```
 
 ```python
 from superduper import VectorIndex, Listener
 
-jobs, _ = db.apply(
-    VectorIndex(
-        vector_index_name,
-        indexing_listener=Listener(
-            key=indexing_key,      # the `Document` key `model` should ingest to create embedding
-            select=select,       # a `Select` query telling which data to search over
-            model=embedding_model,         # a `_Predictor` how to convert data to embeddings
-        ),
-        compatible_listener=Listener(
-            key=compatible_key,      # the `Document` key `model` should ingest to create embedding
-            model=compatible_model,         # a `_Predictor` how to convert data to embeddings
-            active=False,
-            select=None,
-        )
-    )
+vector_index = VectorIndex(
+    'my-vector-index',
+    indexing_listener=Listener(
+        key=upstream_listener.outputs + '.image',      # the `Document` key `model` should ingest to create embedding
+        select=db[upstream_listener.outputs].select(),       # a `Select` query telling which data to search over
+        model=model,         # a `_Predictor` how to convert data to embeddings
+        identifier=f'{model.identifier}-listener'
+    ),
+    compatible_listener=Listener(
+        key='text',      # the `Document` key `model` should ingest to create embedding
+        model=compatible_model,         # a `_Predictor` how to convert data to embeddings
+        select=None,
+        identifier='compatible-listener',
+    ),
+    upstream=[upstream_listener],
 )
 ```
 
 ```python
-query_table_or_collection = select.table_or_collection
+db.apply(vector_index)
+```
+
+```python
+from superduper import Application
+
+app = Application(
+    'video-search',
+    components=[
+        upstream_listener,
+        vector_index,
+    ]
+)
+```
+
+```python
+db.apply(app)
 ```
 
 ## Perform a vector search
@@ -249,13 +252,18 @@ We can perform the vector searches using text description:
 
 ```python
 from superduper import Document
-item = Document({compatible_key: "The moment of a soccer shot"})
+item = Document({'text': "A single red and a blue player battle for the ball"})
+```
+
+```python
+from superduper import Document
+item = Document({'text': "Some monkeys playing"})
 ```
 
 Once we have this search target, we can execute a search as follows.
 
 ```python
-select = query_table_or_collection.like(item, vector_index=vector_index_name, n=5).select()
+select = db[upstream_listener.outputs].like(item, vector_index='my-vector-index', n=5).select()
 results = list(db.execute(select))
 ```
 
@@ -264,7 +272,7 @@ results = list(db.execute(select))
 ```python
 from IPython.display import display
 for result in results:
-    display(Document(result.unpack())[indexing_key])
+    display(Document(result.unpack())[upstream_listener.outputs + '.image'])
 ```
 
 ## Check the system stays updated
@@ -273,6 +281,16 @@ You can add new data; once the data is added, all related models will perform ca
 
 ```python
 new_datas = [{'x': data[-1]}]
-ids = db['documents'].insert(new_datas).execute()
+ids = db['docs'].insert(new_datas).execute()
+```
+
+```python
+from superduper import Template
+
+t = Template('video-search-template', template=app, substitutions={'docs': 'content_table'})
+```
+
+```python
+t.export('.')
 ```
 

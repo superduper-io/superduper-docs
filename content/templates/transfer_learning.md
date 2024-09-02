@@ -1,6 +1,6 @@
 ---
 sidebar_label: Transfer learning
-filename: transfer_learning.md
+filename: build.md
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
@@ -11,11 +11,6 @@ import TabItem from '@theme/TabItem';
 
 <!-- TABS -->
 ## Connect to superduper
-
-:::note
-Note that this is only relevant if you are running superduper in development mode.
-Otherwise refer to "Configuring your production system".
-:::
 
 ```python
 from superduper import superduper
@@ -30,7 +25,7 @@ db = superduper('mongomock:///test_db')
 <Tabs>
     <TabItem value="Text-Classification" label="Text-Classification" default>
         ```python
-        !curl -O https://superduper-public-demo.s3.amazonaws.com/text_classification.json
+        !curl -O https://superduperdb-public-demo.s3.amazonaws.com/text_classification.json
         import json
         
         with open("text_classification.json", "r") as f:
@@ -40,13 +35,13 @@ db = superduper('mongomock:///test_db')
     </TabItem>
     <TabItem value="Image-Classification" label="Image-Classification" default>
         ```python
-        !curl -O https://superduper-public-demo.s3.amazonaws.com/images_classification.zip && unzip images_classification.zip
+        !curl -O https://superduperdb-public-demo.s3.amazonaws.com/images_classification.zip && unzip images_classification.zip
         import json
         from PIL import Image
         
         with open('images/images.json', 'r') as f:
             data = json.load(f)
-        
+            
         data = [{'x': Image.open(d['image_path']), 'y': d['label']} for d in data]
         num_classes = 2        
         ```
@@ -75,7 +70,7 @@ After turning on auto_schema, we can directly insert data, and superduper will a
 ```python
 from superduper import Document
 
-table_or_collection = db['documents']
+table_or_collection = db['docs']
 
 ids = db.execute(table_or_collection.insert([Document(data) for data in datas]))
 select = table_or_collection.select()
@@ -244,6 +239,7 @@ Define a validation for evaluating the effect after training.
 ```python
 from superduper import Dataset, Metric, Validation
 
+
 def acc(x, y):
     return sum([xx == yy for xx, yy in zip(x, y)]) / len(x)
 
@@ -266,28 +262,24 @@ If we execute the apply function, then the model will be added to the database, 
 db.apply(model)
 ```
 
+```python
+model.encode()
+```
+
 Get the training metrics
 
+```python
+model = db.load('model', model.identifier)
+model.metric_values
+```
 
-<Tabs>
-    <TabItem value="Scikit-Learn" label="Scikit-Learn" default>
-        ```python
-        # Load the model from the database
-        model = db.load('model', model.identifier)
-        model.metric_values        
-        ```
-    </TabItem>
-    <TabItem value="Torch" label="Torch" default>
-        ```python
-        !pip -q install matplotlib
-        from matplotlib import pyplot as plt
-        
-        # Load the model from the database
-        model = db.load('model', model.identifier)
-        
-        # Plot the accuracy values
-        plt.plot(model.trainer.metric_values['my-valid/acc'])
-        plt.show()        
-        ```
-    </TabItem>
-</Tabs>
+```python
+from superduper import Template
+
+t = Template('transfer-learner', template=model, substitutions={'docs': 'table'})
+```
+
+```python
+t.export('.')
+```
+
