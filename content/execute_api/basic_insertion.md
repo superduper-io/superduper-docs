@@ -11,7 +11,7 @@ data = ... # an iterable of dictionaries
 For example, first get some [sample data](../reusable_snippets/get_useful_sample_data.md):
 
 ```bash
-!curl -O https://superduper-public-demo.s3.amazonaws.com/text.json
+!curl -O https://superduperdb-public-demo.s3.amazonaws.com/text.json
 ```
 
 Then load the data:

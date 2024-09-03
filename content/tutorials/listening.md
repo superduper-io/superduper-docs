@@ -24,7 +24,7 @@ for quick experimentation.
 
 
 ```python
-!curl -O https://superduper-public-demo.s3.amazonaws.com/images.zip && unzip images.zip
+!curl -O https://superduperdb-public-demo.s3.amazonaws.com/images.zip && unzip images.zip
 from PIL import Image
 import os
 

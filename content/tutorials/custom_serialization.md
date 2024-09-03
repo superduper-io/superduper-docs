@@ -9,7 +9,7 @@ exported class:
 
 
 ```python
-!curl -O https://superduper-public-demo.s3.amazonaws.com/text.json
+!curl -O https://superduperdb-public-demo.s3.amazonaws.com/text.json
 import json
 
 with open('text.json') as f:
