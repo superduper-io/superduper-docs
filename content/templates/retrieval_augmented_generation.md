@@ -79,7 +79,7 @@ won't be necessary.
         
         CHUNK_SIZE = 200
         
-        @model(flatten=True, model_update_kwargs={})
+        @model(flatten=True, model_update_kwargs={'document_embedded': False})
         def chunker(text):
             text = text.split()
             chunks = [' '.join(text[i:i + CHUNK_SIZE]) for i in range(0, len(text), CHUNK_SIZE)]
@@ -94,7 +94,7 @@ won't be necessary.
         
         CHUNK_SIZE = 500
         
-        @model(flatten=True)
+        @model(flatten=True, model_update_kwargs={'document_embedded': False})
         def chunker(pdf_file):
             elements = partition_pdf(pdf_file)
             text = '\n'.join([e.text for e in elements])
@@ -125,6 +125,10 @@ features, or chunking your data. You can use this query to
 operate on those outputs.
 :::
 
+```python
+indexing_key = upstream_listener.outputs
+indexing_key
+```
 <!-- TABS -->
 ## Build text embedding model
 
@@ -192,7 +196,7 @@ vector_index = \
 ## Create Vector Search Model
 
 ```python
-item = {'_outputs__chunker': '<var:query>'}
+item = {indexing_key: '<var:query>'}
 ```
 
 ```python
@@ -202,7 +206,7 @@ vector_search_model = QueryModel(
     identifier="VectorSearch",
     select=db[upstream_listener.outputs].like(item, vector_index=vector_index_name, n=5).select(),
     # The _source is the identifier of the upstream data, which can be used to locate the data from upstream sources using `_source`.
-    postprocess=lambda docs: [{"text": doc['_outputs__chunker'], "_source": doc["_source"]} for doc in docs],
+    postprocess=lambda docs: [{"text": doc[indexing_key], "_source": doc["_source"]} for doc in docs],
     db=db
 )
 ```
