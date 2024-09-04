@@ -13,7 +13,7 @@ import TabItem from '@theme/TabItem';
 <Tabs>
     <TabItem value="Text" label="Text" default>
         ```python
-        !curl -O https://superduper-public-demo.s3.amazonaws.com/text.json
+        !curl -O https://superduperdb-public-demo.s3.amazonaws.com/text.json
         import json
         
         with open('text.json', 'r') as f:
@@ -22,7 +22,7 @@ import TabItem from '@theme/TabItem';
     </TabItem>
     <TabItem value="Text-Classification" label="Text-Classification" default>
         ```python
-        !curl -O https://superduper-public-demo.s3.amazonaws.com/text_classification.json
+        !curl -O https://superduperdb-public-demo.s3.amazonaws.com/text_classification.json
         import json
         
         with open("text_classification.json", "r") as f:
@@ -32,7 +32,7 @@ import TabItem from '@theme/TabItem';
     </TabItem>
     <TabItem value="PDF" label="PDF" default>
         ```python
-        !curl -O https://superduper-public-demo.s3.amazonaws.com/pdfs.zip && unzip -o pdfs.zip
+        !curl -O https://superduperdb-public-demo.s3.amazonaws.com/pdfs.zip && unzip -o pdfs.zip
         import os
         
         data = [f'pdfs/{x}' for x in os.listdir('./pdfs') if x.endswith('.pdf')]        
@@ -40,7 +40,7 @@ import TabItem from '@theme/TabItem';
     </TabItem>
     <TabItem value="Image" label="Image" default>
         ```python
-        !curl -O https://superduper-public-demo.s3.amazonaws.com/images.zip && unzip images.zip
+        !curl -O https://superduperdb-public-demo.s3.amazonaws.com/images.zip && unzip images.zip
         import os
         from PIL import Image
         
@@ -50,7 +50,7 @@ import TabItem from '@theme/TabItem';
     </TabItem>
     <TabItem value="Image-Classification" label="Image-Classification" default>
         ```python
-        !curl -O https://superduper-public-demo.s3.amazonaws.com/images_classification.zip && unzip images_classification.zip
+        !curl -O https://superduperdb-public-demo.s3.amazonaws.com/images_classification.zip && unzip images_classification.zip
         import json
         from PIL import Image
         
@@ -63,7 +63,7 @@ import TabItem from '@theme/TabItem';
     </TabItem>
     <TabItem value="Video" label="Video" default>
         ```python
-        !curl -O https://superduper-public-demo.s3.amazonaws.com/videos.zip && unzip videos.zip
+        !curl -O https://superduperdb-public-demo.s3.amazonaws.com/videos.zip && unzip videos.zip
         import os
         
         data = [f'videos/{x}' for x in os.listdir('./videos')]
@@ -75,7 +75,7 @@ import TabItem from '@theme/TabItem';
     </TabItem>
     <TabItem value="Audio" label="Audio" default>
         ```python
-        # !curl -O https://superduper-public-demo.s3.amazonaws.com/audio.zip && unzip audio.zip
+        # !curl -O https://superduperdb-public-demo.s3.amazonaws.com/audio.zip && unzip audio.zip
         import os
         
         data = [f'audios/{x}' for x in os.listdir('./audio')]

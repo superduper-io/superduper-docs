@@ -21,7 +21,7 @@ by following [these lines of code](../reusable_snippets/get_useful_sample_data).
 ```python
 import json
 import requests 
-r = requests.get('https://superduper-public-demo.s3.amazonaws.com/text.json')
+r = requests.get('https://superduperdb-public-demo.s3.amazonaws.com/text.json')
 
 with open('text.json', 'wb') as f:
     f.write(r.content)

@@ -13,7 +13,7 @@ To learn more about setting these up manually read [the following page](./data_e
 To learn about this feature, try these lines of code, based on sample image data we've prepared.
 
 ```bash
-curl -O https://superduper-public-demo.s3.amazonaws.com/images.zip && unzip images.zip
+curl -O https://superduperdb-public-demo.s3.amazonaws.com/images.zip && unzip images.zip
 ```
 
 ```python

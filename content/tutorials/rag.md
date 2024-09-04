@@ -11,7 +11,7 @@ We'll add this to a testing database by downloading the data snapshot:
 
 
 ```python
-!curl -O https://superduper-public-demo.s3.amazonaws.com/text.json
+!curl -O https://superduperdb-public-demo.s3.amazonaws.com/text.json
 ```
 
 
