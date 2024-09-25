@@ -37,7 +37,7 @@ Follow these steps to get started with Superduper:
 
 7. **Engage with the Community**
 
-    If you encounter challenges, join our [Slack Channels](https://join.slack.com/t/superduper/shared_invite/zt-1zuojj0k0-RjAYBs1TDsvEa7yaFGa6QA) for assistance. Report bugs and share feature requests [by raising an issue]((https://github.com/superduper/superduper/issues).). Our community is here to support you.
+    If you encounter challenges, join our [Slack Channels](https://join.slack.com/t/superduper-public/shared_invite/zt-1yodhtx8y-KxzECued5QBtT6JFnsSNrQ) for assistance. Report bugs and share feature requests [by raising an issue]((https://github.com/superduper/superduper/issues).). Our community is here to support you.
 
     You are welcome to join the conversation on our [discussions forum](https://github.com/superduper/superduper/discussions) and follow our open-source roadmap [here](https://github.com/orgs/superduper/projects/1/views/10).
 
