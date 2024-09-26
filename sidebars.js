@@ -196,7 +196,7 @@ const sidebars = {
           collapsed: false,
           link: {
             type: 'doc',
-            id: 'data_plugins/sql',
+            id: 'data_plugins/ibis',
           },
           items: [
             'data_plugins/mysql',
@@ -207,6 +207,7 @@ const sidebars = {
           ],
         },
         'data_plugins/pandas',
+        'data_plugins/sqlalchemy',
       ],
     },
     {
@@ -222,11 +223,10 @@ const sidebars = {
       items: [
         'ai_plugins/anthropic',
         'ai_plugins/cohere',
-        'ai_plugins/custom',
         'ai_plugins/jina',
-        'ai_plugins/llama_cpp',
+        'ai_plugins/llamacpp',
         'ai_plugins/openai',
-        'ai_plugins/pytorch',
+        'ai_plugins/torch',
         'ai_plugins/sentence_transformers',
         'ai_plugins/sklearn',
         'ai_plugins/transformers',

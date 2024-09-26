@@ -1,4 +1,7 @@
-# vLLM
+<!-- Auto-generated content start -->
+# superduper_vllm
+
+Superduper allows users to work with self-hosted LLM models via [vLLM](https://github.com/vllm-project/vllm).
 
 ## Installation
 
@@ -8,10 +11,64 @@ pip install superduper_vllm
 
 ## API
 
-`superduper` allows users to work with self-hosted LLM models via "[vLLM](https://github.com/vllm-project/vllm)".
 
-| Class | Description | GitHub | API-docs |
-| --- | --- | --- | --- |
-| `superduper.ext.vllm.VllmModel` | Completes a prompt with natural language (LLM) based on a self hosted LLM | [Code](https://github.com/superduper/superduper/blob/main/superduper/ext/vllm/model.py) | [Docs](/docs/api/ext/vllm/model#vllmmodel) |
-| `superduper.ext.vllm.VllmAPI` | Completes a prompt with natural language (LLM) based on a self hosted LLM behind the vLLM API server | [Code](https://github.com/superduper/superduper/blob/main/superduper/ext/vllm/model.py) | [Docs](/docs/api/ext/vllm/model#vllmapi) |
+- [Code](https://github.com/superduper-io/superduper/tree/main/plugins/vllm)
+- [API-docs](/docs/api/plugins/superduper_vllm)
 
+| Class | Description |
+|---|---|
+| `superduper_vllm.model.VllmChat` | VLLM model for chatting. |
+| `superduper_vllm.model.VllmCompletion` | VLLM model for generating completions. |
+
+
+## Examples
+
+### VllmChat
+
+```python
+from superduper_vllm import VllmChat
+vllm_params = dict(
+    model="hugging-quants/Meta-Llama-3.1-8B-Instruct-AWQ-INT4",
+    quantization="awq",
+    dtype="auto",
+    max_model_len=1024,
+    tensor_parallel_size=1,
+)
+model = VllmChat(identifier="model", vllm_params=vllm_params)
+messages = [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "hello"},
+]
+```
+
+Chat with chat format messages
+
+```python
+model.predict(messages)
+```
+
+Chat with text format messages
+
+```python
+model.predict("hello")
+```
+
+### VllmCompletion
+
+```python
+from superduper_vllm import VllmCompletion
+vllm_params = dict(
+    model="hugging-quants/Meta-Llama-3.1-8B-Instruct-AWQ-INT4",
+    quantization="awq",
+    dtype="auto",
+    max_model_len=1024,
+    tensor_parallel_size=1,
+)
+model = VllmCompletion(identifier="model", vllm_params=vllm_params)
+model.predict("hello")
+```
+
+
+<!-- Auto-generated content end -->
+
+<!-- Add your additional content below -->

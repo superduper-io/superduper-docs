@@ -1,4 +1,10 @@
-# Transformers
+<!-- Auto-generated content start -->
+# superduper_transformers
+
+Transformers is a popular AI framework, and we have incorporated native support for Transformers to provide essential Large Language Model (LLM) capabilities.
+
+Superduper allows users to work with arbitrary transformers pipelines, with custom input/ output data-types.
+
 
 ## Installation
 
@@ -8,72 +14,43 @@ pip install superduper_transformers
 
 ## API
 
-[Transformers](https://huggingface.co/docs/transformers/index) is a popular AI framework, and we have incorporated native support for Transformers to provide essential Large Language Model (LLM) capabilities.
-`superduper` allows users to work with arbitrary `transformers` pipelines, with custom input/ output data-types.
 
-| Class | Description | GitHub | API-docs |
-| --- | --- | --- | --- |
-| `superduper.ext.transformers.model.TextClassification` | A pipeline for classifying text. | [Code](https://github.com/superduper/superduper/blob/main/superduper/transformers/model.py) | [Docs](/docs/api/ext/transformers/model#textclassificationpipeline) |
-| `superduper.ext.transformers.model.LLM` | Work locally with the `transformers` implementations of LLM. | [Code](https://github.com/superduper/superduper/blob/main/superduper/ext/transformers/model.py) | [Docs](/docs/api/ext/transformers/model#llm) |
+- [Code](https://github.com/superduper-io/superduper/tree/main/plugins/transformers)
+- [API-docs](/docs/api/plugins/superduper_transformers)
 
-
-### `TextClassification`
-
-One of the most commonly used pipelines in `transformers` is the `TextClassificationPipeline`.
-You may apply and train these pipelines with `superduper`.
-Read more in the [API documentation](/docs/api/ext/transformers/model#textclassificationpipeline).
+| Class | Description |
+|---|---|
+| `superduper_transformers.model.TextClassificationPipeline` | A wrapper for ``transformers.Pipeline``. |
+| `superduper_transformers.model.LLM` | LLM model based on `transformers` library. |
 
 
-### `LLM`
+## Examples
 
-You can quickly utilize LLM capabilities using the following Python function:
+### TextClassificationPipeline
 
 ```python
-from superduper.ext.transformers import LLM
-llm = LLM(model_name_or_path="facebook/opt-350m")
-llm.predict("What are we having for dinner?")
-```
+from superduper_transformers.model import TextClassificationPipeline
 
-Or use a method similar to transformers’ from_pretrained, just need to supplement the identifier parameter.
-
-```python
-from superduper.ext.transformers import LLM
-llm = LLM.from_pretrained(
-    "facebook/opt-350m", 
-    load_in_8bit=True, 
-    device_map="cuda", 
-    identifier="llm",
+model = TextClassificationPipeline(
+    identifier="my-sentiment-analysis",
+    model_name="distilbert-base-uncased",
+    model_kwargs={"num_labels": 2},
+    device="cpu",
 )
+model.predict("Hello, world!")
 ```
 
-The model can be configured with the following parameters:
+### LLM
 
-- adapter_id: Add an adapter to the base model for inference.
-- model_kwargs: a dictionary; all the model_kwargs will be passed to transformers.AutoModelForCausalLM.from_pretrained. You can provide parameters such as trust_remote_code=True.
-- tokenizer_kwargs: a dictionary; all the tokenizer_kwargs will be passed to transformers.AutoTokenizer.from_pretrained.
+```python
+from superduper_transformers import LLM
+model = LLM(identifier="llm", model_name_or_path="facebook/opt-125m")
+model.predict("Hello, world!")
+```
 
-## Training
 
-For a fully worked out training/ fine-tuning use-case refer to the [use-cases section](../use_cases/fine_tune_llm_on_database.md).
+<!-- Auto-generated content end -->
 
-### LLM fine-tuning
-
-`superduper` provides a convenient fine-tuning method based on the [trl](https://huggingface.co/docs/trl/index) framework to help you train data in the database.
-
-### Supported Features
-
-**Training Methods**:
-
-- Full fine-tuning
-- LoRA fine-tuning
-
-**Parallel Training**:
-
-Parallel training is supported using Ray, with data parallelism as the default strategy. You can also pass DeepSpeed parameters to configure parallelism through [DeepSpeed configuration](https://huggingface.co/docs/transformers/main_classes/deepspeed#zero).
-
-- Multi-GPUs fine-tuning
-- Multi-nodes fine-tuning
-
-**Training on Ray**:
-
-We can use Ray to train models. When using Ray as the compute backend, tasks will automatically run in Ray and the program will no longer be blocked.
+<!-- Add your additional content below -->
+## Training Example
+Read more about this [here](https://docs.superduper.io/docs/templates/llm_finetuning)
