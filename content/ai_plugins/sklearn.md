@@ -1,4 +1,7 @@
-# Scikit-learn
+<!-- Auto-generated content start -->
+# superduper_sklearn
+
+superduper allows users to work with arbitrary sklearn estimators, with additional support for pre-, post-processing and input/ output data-types.
 
 ## Installation
 
@@ -8,11 +11,34 @@ pip install superduper_sklearn
 
 ## API
 
-`superduper` allows users to work with arbitrary `sklearn` estimators, with additional support for pre-, post-processing and input/ output data-types.
 
-Read more about this [here](/docs/docs/walkthrough/ai_models#scikit-learn).
+- [Code](https://github.com/superduper-io/superduper/tree/main/plugins/sklearn)
+- [API-docs](/docs/api/plugins/superduper_sklearn)
 
-| Class | Description | GitHub | API-docs |
-| --- | --- | --- | --- |
-| `superduper.ext.sklearn.model.Estimator` | Wraps a scikit-learn estimator | [Code](https://github.com/superduper/superduper/blob/main/superduper/ext/sklearn/model.py) | [Docs](/docs/api/ext/sklearn/model#estimator) |
-| `superduper.ext.sklearn.model.SklearnTrainer` | May be attached to an `Estimator` for training | [Code](https://github.com/superduper/superduper/blob/main/superduper/ext/sklearn/model.py) | [Docs](/docs/api/ext/sklearn/model#sklearntrainer) |
+| Class | Description |
+|---|---|
+| `superduper_sklearn.model.SklearnTrainer` | A trainer for `sklearn` models. |
+| `superduper_sklearn.model.Estimator` | Estimator model. |
+
+
+## Examples
+
+### Estimator
+
+```python
+from superduper_sklearn import Estimator
+from sklearn.svm import SVC
+model = Estimator(
+    identifier='test',
+    object=SVC(),
+)
+```
+
+
+<!-- Auto-generated content end -->
+
+<!-- Add your additional content below -->
+
+## Training Example
+
+Read more about this [here](https://docs.superduper.io/docs/templates/transfer_learning)
