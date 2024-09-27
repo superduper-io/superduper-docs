@@ -41,8 +41,9 @@ for i, cell in enumerate(notebook['cells']):
                     tmp = tmp.replace('{', '\{').replace('}', '\}')
                     blocks.append('<pre>\n' + tmp + '\n</pre>')
 
-        blocks = '\n'.join(blocks)
-        text += "\n<details>\n<summary>Outputs</summary>\n" + blocks + '\n</details>\n'
+        if blocks:
+            blocks = '\n'.join(blocks)
+            text += "\n<details>\n<summary>Outputs</summary>\n" + blocks + '\n</details>\n'
 
     if cell['cell_type'] == 'markdown':
         text += '\n' + ''.join(cell['source']) + '\n'

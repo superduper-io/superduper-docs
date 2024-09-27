@@ -39,6 +39,7 @@ const sidebars = {
         'tutorials/training',
         'tutorials/custom_serialization',
         'tutorials/eager_mode',
+        'tutorials/application_template',
       ],
     },
     {

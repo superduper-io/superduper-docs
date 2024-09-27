@@ -2,3 +2,4 @@
 /build
 /.docusaurus
 /templates
+**/**.ipynb_checkpoints
