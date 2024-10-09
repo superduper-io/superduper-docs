@@ -118,13 +118,14 @@ const config = {
       ({
         docs: {
           routeBasePath: 'docs',
-          path: 'content',
+          path: 'docs',
           sidebarPath: require.resolve('./sidebars.js'),
           // sidebarCollapsible: true,
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
             'https://github.com/superduper-io/superduper/edit/main/docs/',
+          versions: {current: {label: 'Main branch'}},
         },
         blog: false,
         theme: {
@@ -180,6 +181,18 @@ const config = {
             to: 'https://blog.superduper.io/',
             label: 'Blog',
             position: 'left',
+          },
+          {
+            type: 'docsVersionDropdown',
+            position: 'right',
+            // Optional, can rename the label
+            dropdownItemsBefore: [],
+            dropdownItemsAfter: [
+              {
+                to: '/versions',
+                label: 'All versions',
+              },
+            ],
           },
           {
             href: 'https://github.com/superduper-io/superduper',

@@ -15,15 +15,9 @@ const sidebars = {
       id: 'intro',
     },
     {
-      type: 'category',
+      type: 'doc',
       label: 'Get started',
-      collapsed: true,
-      collapsible: true,
-      items: ['get_started/installation', 'get_started/configuration'],
-      link: {
-        type: 'doc',
-        id: 'get_started/first_steps',
-      },
+      id: 'get_started',
     },
     {
       type: 'category',
@@ -44,12 +38,12 @@ const sidebars = {
     },
     {
       type: 'category',
-      label: 'Core API',
+      label: 'Connect API',
       link: {
         type: 'doc',
-        id: 'core_api/intro',
+        id: 'connect_api/overview',
       },
-      items: ['core_api/connect', 'core_api/apply', 'core_api/execute'],
+      items: [],
     },
     {
       type: 'category',
@@ -72,7 +66,7 @@ const sidebars = {
         'apply_api/template',
         'apply_api/plugin',
         'apply_api/application',
-        'apply_api/trigger',
+        'apply_api/cdc',
         'apply_api/cron_job',
       ],
     },
@@ -129,31 +123,28 @@ const sidebars = {
     },
     {
       type: 'category',
-      label: 'Models',
+      label: 'Packaging API',
       link: {
         type: 'doc',
-        id: 'models/overview',
+        id: 'packaging_api/overview',
       },
       items: [
-        'models/key_methods',
-        'models/daemonizing_models_with_listeners',
-        'models/linking_interdependent_models',
-        'models/training_models',
-        'models/evaluating_models',
-        'models/llms',
-        'models/embeddings',
-        'models/bring_your_own_models',
+        'packaging_api/superduper_protocol',
       ],
     },
     {
       type: 'category',
-      label: 'Applications',
+      label: 'Customize',
       link: {
         type: 'doc',
-        id: 'applications/overview',
+        id: 'customize/overview',
       },
       items: [
-        'applications/superduper_protocol',
+        'customize/component',
+        'customize/model',
+        'customize/training_models',
+        'customize/metric',
+        'customize/cdc',
       ],
     },
     {
