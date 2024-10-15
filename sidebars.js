@@ -50,9 +50,11 @@ const sidebars = {
       label: 'Apply API',
       link: {
         type: 'doc',
-        id: 'apply_api/component',
+        id: 'apply_api/overview',
       },
       items: [
+        'apply_api/overview',
+        'apply_api/component',
         'apply_api/model',
         'apply_api/listener',
         'apply_api/vector_index',
