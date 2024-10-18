@@ -31,24 +31,41 @@ pip install superduper_mongodb
 
 Note that Superduper allows developers to completely 
 own their applications, self-hosting all models and data, if so wished. 
-The simplest template `"rag"` uses the OpenAI API, however, to facilitate
-using the system. For this, one sets the `OPENAI_API_KEY` env. variable:
+To view which templates are available, type:
 
 ```bash
-export OPENAI_API_KEY=sk-...
+superduper ls
+```
+
+To view a template do:
+
+```bash
+superduper inspect <template_name>
+```
+
+To install a template, do:
+
+```bash
+superduper bootstrap <template_name>
 ```
 
 To try a simple RAG application either do:
 
 ```bash
-superduper apply rag mongodb://localhost:27017/test_db --collection my-collection --model gpt-3.5-turbo
+export OPENAI_API_KEY=sk-...
+superduper bootstrap simple_rag
+superduper apply simple_rag --variables '{"table_name": "my-collection"}' --data_backend mongodb://localhost:27017/test_db
 ```
 
 Or from python:
 
 ```python
+from superduper import superduper
 from superduper.templates import rag
-db.apply(rag)
+
+db = superduper('mongodb://localhost:27017/test_db')
+rag_app = rag(table_name='my-collection')
+db.apply(rag_app)
 ```
 
 Once this command has successfully executed, view the results in the user interface:
@@ -59,10 +76,10 @@ superduper start
 
 Navigate to the execute tab to test the results:
 
-<!-- ![](./img/screenshot_execute.png) -->
+![](/img/screenshot_execute.png)
 
-Superduper includes a range of pre-packaged templates, view these templates with:
+Or execute queries from the command line:
 
 ```bash
-superduper ls
+superduper execute
 ```
