@@ -1,7 +1,7 @@
 <!-- Auto-generated content start -->
 # `superduper_mongodb`
 
-SuperDuper MongoDB is a Python library that provides a high-level API for working with MongoDB. It is built on top of pymongo and provides a more user-friendly interface for working with MongoDB.
+Superduper MongoDB is a Python library that provides a high-level API for working with MongoDB. It is built on top of pymongo and provides a more user-friendly interface for working with MongoDB.
 
 In general the MongoDB query API works exactly as per pymongo, with the exception that:
 

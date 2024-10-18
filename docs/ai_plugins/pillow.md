@@ -1,7 +1,7 @@
 <!-- Auto-generated content start -->
 # superduper_pillow
 
-SuperDuper Pillow is a plugin for SuperDuper that provides support for Pillow.
+`superduper_pillow` is a plugin for SuperDuper that provides support for Pillow.
 
 ## Installation
 
@@ -44,5 +44,3 @@ db["image"].insert([{"img": Image.open("test/material/data/1x1.png")}]).execute(
 # Selecting an image
 list(db["image"].select().execute())
 ```
-
-

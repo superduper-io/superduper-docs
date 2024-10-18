@@ -17,9 +17,6 @@ gen_docs: ## Generate Docs and API
 DIRECTORY := ./templates
 FILES := $(shell ls $(DIRECTORY))
 
-DIRECTORY := ./templates
-FILES := $(shell ls $(DIRECTORY))
-
 compile_docs: ## Convert templates to markdown content
 	@for file in $(FILES); do \
 		echo "Processing $(DIRECTORY)/$$file..."; \

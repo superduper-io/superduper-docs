@@ -1,4 +1,4 @@
-# SuperDuper Protocol
+# Superduper Protocol
 
 Superduper includes a protocol allowed developers to switch back and forth from Python and YAML/ JSON formats.
 The mapping is fairly self-explanatory after reading the examples below.
@@ -15,7 +15,7 @@ import TabItem from '@theme/TabItem';
         _base: "?my_vector_index"
         _leaves:
           postprocess:
-            _path: superduper/base/code/Code
+            _path: superduper.base.code.Code
             code: '
               from superduper import code
 
@@ -24,23 +24,23 @@ import TabItem from '@theme/TabItem';
                   return x.tolist()
               '
           my_vector:
-            _path: superduper.components/vector_index/vector
+            _path: superduper.components.vector_index.vector
             shape: 384
           sentence_transformer:
-            _path: superduper/ext/sentence_transformers/model/SentenceTransformer
+            _path: superduper.ext.sentence_transformers.model.SentenceTransformer
             datatype: "?my_vector"
             model: "all-MiniLM-L6-v2"
             postprocess: "?postprocess"
           my_query:
-            _path: superduper/backends/mongodb/query/parse_query
+            _path: superduper.backends.mongodb.query.parse_query
             query: "documents.find()"
           my_listener:
-            _path: superduper.components/listener/Listener
+            _path: superduper.components.listener.Listener
             model: "?sentence_transformer"
             select: "?my_query"
             key: "X"
           my_vector_index:
-            _path: superduper.components/vector_index/VectorIndex
+            _path: superduper.components.vector_index.VectorIndex
             indexing_listener: "?my_listener"
             measure: cosine
         ```
@@ -59,30 +59,30 @@ import TabItem from '@theme/TabItem';
           "_base": "?my_vector_index",
           "_leaves": {
             "postprocess": {
-              "_path": "superduper/base/code/Code",
+              "_path": "superduper.base.code.Code",
               "code": "from superduper import code\n\n@code\ndef postprocess(x):\n    return x.tolist()"
             },
             "my_vector": {
-              "_path": "superduper.components/vector_index/vector",
+              "_path": "superduper.components.vector_index.vector",
               "shape": 384
             },
             "sentence_transformer": {
-              "_path": "superduper/ext/sentence_transformers/model/SentenceTransformer",
+              "_path": "superduper.ext.sentence_transformers.model.SentenceTransformer",
               "datatype": "?my_vector",
               "model": "all-MiniLM-L6-v2",
               "postprocess": "?postprocess"
             },
             "my_query": {
-              "_path": "superduper/backends/mongodb/query/parse_query",
+              "_path": "superduper.backends.mongodb.query.parse_query",
               "query": "documents.find()"
             },
             "my_listener": {
-              "_path": "superduper.components/listener/Listener",
+              "_path": "superduper.components.listener.Listener",
               "model": "?sentence_transformer",
               "select": "?my_query"
             },
             "my_vector_index": {
-              "_path": "superduper.components/vector_index/VectorIndex",
+              "_path": "superduper.components.vector_index.VectorIndex",
               "indexing_listener": "?my_listener",
               "measure": "cosine"
             }

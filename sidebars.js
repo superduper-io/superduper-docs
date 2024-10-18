@@ -151,31 +151,6 @@ const sidebars = {
     },
     {
       type: 'category',
-      label: 'Building blocks',
-      collapsed: true,
-      collapsible: true,
-      items: [
-        'building_blocks/connect_to_superduper',
-        'building_blocks/create_datatype',
-        'building_blocks/get_useful_sample_data',
-        'building_blocks/insert_data',
-        'building_blocks/compute_features',
-        'building_blocks/build_text_embedding_model',
-        'building_blocks/build_image_embedding_model',
-        'building_blocks/build_multimodal_embedding_models',
-        'building_blocks/build_llm',
-        'building_blocks/create_vector_index',
-        'building_blocks/perform_a_vector_search',
-        'building_blocks/connecting_listeners',
-        'building_blocks/build_and_train_classifier',
-      ],
-      link: {
-        type: 'generated-index',
-        description: 'Common patterns for quick use',
-      },
-    },
-    {
-      type: 'category',
       label: 'Data plugins',
       collapsed: false,
       link: {

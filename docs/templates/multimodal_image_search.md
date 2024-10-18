@@ -1,13 +1,4 @@
----
-sidebar_label: Multimodal vector search - Image
-filename: build.md
----
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-
-
-<!-- TABS -->
-# Multimodal vector search - Image
+# Multimodal vector search - images
 
 <!-- TABS -->
 ## Connect to superduper
@@ -16,6 +7,7 @@ import TabItem from '@theme/TabItem';
 Note that this is only relevant if you are running superduper in development mode.
 Otherwise refer to "Configuring your production system".
 :::
+
 
 ```python
 from superduper import superduper
@@ -26,6 +18,7 @@ db = superduper('mongomock:///test_db')
 <!-- TABS -->
 ## Get useful sample data
 
+
 ```python
 !curl -O https://superduperdb-public-demo.s3.amazonaws.com/images.zip && unzip images.zip
 import os
@@ -34,6 +27,7 @@ from PIL import Image
 data = [f'images/{x}' for x in os.listdir('./images') if x.endswith(".png")][:200]
 data = [ Image.open(path) for path in data]
 ```
+
 
 ```python
 data = [{'img': d} for d in data[:100]]
@@ -44,21 +38,21 @@ data = [{'img': d} for d in data[:100]]
 We define the output data type of a model as a vector for vector transformation.
 
 
-<Tabs>
-    <TabItem value="MongoDB" label="MongoDB" default>
-        ```python
-        from superduper.components.vector_index import vector
-        output_datatpye = vector(shape=(1024,))        
-        ```
-    </TabItem>
-    <TabItem value="SQL" label="SQL" default>
-        ```python
-        from superduper.components.vector_index import sqlvector
-        output_datatpye = sqlvector(shape=(1024,))        
-        ```
-    </TabItem>
-</Tabs>
+```python
+# <tab: MongoDB>
+from superduper.components.vector_index import vector
+output_datatpye = vector(shape=(1024,))
+```
+
+
+```python
+# <tab: SQL>
+from superduper.components.vector_index import sqlvector
+output_datatpye = sqlvector(shape=(1024,))
+```
+
 Then define two models, one for text embedding and one for image embedding.
+
 
 ```python
 !pip install git+https://github.com/openai/CLIP.git
@@ -92,6 +86,7 @@ embedding_model = TorchModel(
 
 Because we use multimodal models, we define different keys to specify which model to use for embedding calculations in the vector_index.
 
+
 ```python
 indexing_key = 'img' # we use img key for img embedding
 compatible_key = 'text' # we use text key for text embedding
@@ -99,9 +94,11 @@ compatible_key = 'text' # we use text key for text embedding
 
 ## Create vector-index
 
+
 ```python
 vector_index_name = 'my-vector-index'
 ```
+
 
 ```python
 from superduper import VectorIndex, Listener
@@ -123,6 +120,7 @@ vector_index = VectorIndex(
 )
 ```
 
+
 ```python
 from superduper import Application
 
@@ -137,6 +135,7 @@ db.apply(application)
 ## Add the data
 
 The order in which data is added is not important. *However* if your data requires a custom `Schema` in order to work, it's easier to add the `Application` first, and the data later. The advantage of this flexibility, is that once the `Application` is installed, it's waiting for incoming data, so that the `Application` is always up-to-date. This comes in particular handy with AI scenarios which need to respond to changing news.
+
 
 ```python
 from superduper import Document
@@ -154,22 +153,22 @@ We can perform the vector searches using two types of data:
 - Image: By using an image, we can find images similar to the provided image.
 
 
-<Tabs>
-    <TabItem value="Text" label="Text" default>
-        ```python
-        item = Document({compatible_key: "Find a black dog"})        
-        ```
-    </TabItem>
-    <TabItem value="Image" label="Image" default>
-        ```python
-        from IPython.display import display
-        search_image = data[0]
-        display(search_image)
-        item = Document({indexing_key: search_image})        
-        ```
-    </TabItem>
-</Tabs>
+```python
+# <tab: Text>
+item = Document({compatible_key: "Find a black dog"})
+```
+
+
+```python
+# <tab: Image>
+from IPython.display import display
+search_image = data[0]
+display(search_image)
+item = Document({indexing_key: search_image})
+```
+
 Once we have this search target, we can execute a search as follows.
+
 
 ```python
 select = db['docs'].like(item, vector_index=vector_index_name, n=5).select()
@@ -178,6 +177,7 @@ results = list(db.execute(select))
 
 ## Visualize Results
 
+
 ```python
 from IPython.display import display
 for result in results:
@@ -185,6 +185,7 @@ for result in results:
 ```
 
 ## Create a `Template`
+
 
 ```python
 from superduper import Template
@@ -197,4 +198,3 @@ template = Template(
 
 template.export('.')
 ```
-

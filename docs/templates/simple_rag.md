@@ -1,4 +1,4 @@
-# Text vector search
+# Simple retrieval augmented generation with OpenAI
 
 <!-- TABS -->
 ## Connect to superduper
@@ -11,19 +11,26 @@ Otherwise refer to "Configuring your production system".
 
 ```python
 APPLY = True
-COLLECTION_NAME = '<var:table_name>' if not APPLY else '_sample_text_vector_search'
-ID_FIELD = '<var:id_field>' if not APPLY else '_id'
+COLLECTION_NAME = '<var:table_name>' if not APPLY else '_sample_rag'
+ID_FIELD = '<var:id_field>' if not APPLY else 'id'
+OUTPUT_PREFIX = 'outputs__'
 ```
 
 
 ```python
-from superduper import superduper
+from superduper import superduper, CFG
 
-db = superduper('mongomock:///test_db')
+CFG.output_prefix = OUTPUT_PREFIX
+CFG.bytes_encoding = 'str'
+CFG.native_json = False
+
+db = superduper()
 ```
 
-<!-- TABS -->
-## Get useful sample data
+
+```python
+db.drop(force=True, data=True)
+```
 
 
 ```python
@@ -31,7 +38,6 @@ import json
 
 with open('data.json', 'r') as f:
     data = json.load(f)
-
 data = [{'x': r} for r in data]
 ```
 
@@ -61,10 +67,11 @@ won't be necessary.
 ```python
 from superduper import Model
 
+
 class Chunker(Model):
     chunk_size: int = 200
     signature: str = 'singleton'
-    
+
     def predict(self, text):
         text = text.split()
         chunks = [' '.join(text[i:i + self.chunk_size]) for i in range(0, len(text), self.chunk_size)]
@@ -77,8 +84,9 @@ Now we apply this chunker to the data by wrapping the chunker in `Listener`:
 ```python
 from superduper import Listener
 
+
 upstream_listener = Listener(
-    model=Chunker('chunk_model', chunk_size=200, example='test ' * 50),
+    model=Chunker(identifier='chunker'),
     select=db[COLLECTION_NAME].select(ID_FIELD, 'x'),
     key='x',
     identifier='chunker',
@@ -108,40 +116,11 @@ OpenAI:
 
 ```python
 import os
-
 from superduper.components.vector_index import sqlvector
+
 from superduper_openai import OpenAIEmbedding
 
-openai_embedding = OpenAIEmbedding(identifier='text-embedding-ada-002', datatype=sqlvector(shape=(1536,)))
-```
-
-Sentence-transformers
-
-
-```python
-import sentence_transformers
-from superduper.components.vector_index import sqlvector
-from superduper_sentence_transformers import SentenceTransformer
-
-sentence_transformers_embedding = SentenceTransformer(
-    identifier="sentence-transformers-embedding",
-    model="BAAI/bge-small-en",
-    datatype=sqlvector(shape=(1024,)),
-    postprocess=lambda x: x.tolist(),
-    predict_kwargs={"show_progress_bar": True},
-)
-```
-
-
-```python
-from superduper.components.model import ModelRouter
-
-embedding_model = ModelRouter(
-    'embedding',
-    models={'openai': openai_embedding, 'sentence_transformers': sentence_transformers_embedding},
-    model='<var:embedding_model>' if not APPLY else 'openai',
-    example='this is a test',
-)
+openai_embedding = OpenAIEmbedding(identifier='text-embedding-ada-002' , datatype=sqlvector(shape=(1536,)))
 ```
 
 ## Create vector-index
@@ -150,15 +129,15 @@ embedding_model = ModelRouter(
 ```python
 from superduper import VectorIndex, Listener
 
-vector_index_name = 'vector-index'
+vector_index_name = 'vectorindex'
 
 vector_index = VectorIndex(
     vector_index_name,
     indexing_listener=Listener(
         key=upstream_listener.outputs,
-        select=db[upstream_listener.outputs].select(),
-        model=embedding_model,
-        identifier='embedding-listener',
+        select=db[upstream_listener.outputs].select('id', '_source', upstream_listener.outputs),
+        model=openai_embedding,
+        identifier='embeddinglistener',
         upstream=[upstream_listener],
     )
 )
@@ -170,6 +149,50 @@ if APPLY:
     db.apply(vector_index, force=True)
 ```
 
+<!-- TABS -->
+## Build LLM
+
+
+```python
+from superduper_openai import OpenAIChatCompletion
+
+llm_openai = OpenAIChatCompletion(identifier='llm-openai', model='gpt-3.5-turbo')
+```
+
+## Answer question with LLM
+
+
+```python
+from superduper import model
+from superduper.components.model import RAGModel
+
+prompt_template = (
+    "Use the following context snippets, these snippets are not ordered!, Answer the question based on this context.\n"
+    "{context}\n\n"
+    "Here's the question: {query}"
+)
+
+rag = RAGModel(
+    'rag-model',
+    select=db[upstream_listener.outputs].select().like({upstream_listener.outputs: '<var:query>'}, vector_index=vector_index_name, n=5),
+    prompt_template=prompt_template,
+    key=upstream_listener.outputs,
+    llm=llm_openai,
+)
+```
+
+
+```python
+if APPLY:
+    db.apply(rag, force=True)
+```
+
+
+```python
+if APPLY:
+    print(rag.predict('Tell me about vector-search'))
+```
+
 By applying the RAG model to the database, it will subsequently be accessible for use in other services.
 
 
@@ -177,10 +200,11 @@ By applying the RAG model to the database, it will subsequently be accessible fo
 from superduper import Application
 
 app = Application(
-    'text-vector-search-app',
+    'rag-app',
     components=[
         upstream_listener,
         vector_index,
+        rag,
     ]
 )
 ```
@@ -200,15 +224,20 @@ You can now load the model elsewhere and make predictions using the following co
 from superduper import Template
 
 template = Template(
-    'text_vector_search',
+    'rag-simple',
     template=app,
     data=data,
-    substitutions={'docs': 'table_name'},
-    template_variables=['embedding_model', 'table_name'],
+    substitutions={'docs': 'table_name', OUTPUT_PREFIX: 'output_prefix'},
+    template_variables=['table_name', 'id_field'],
     types={
         'id_field': {
             'type': 'str',
             'default': '_id',
+        },
+        'llm_model': {
+            'type': 'str',
+            'choices': ['openai', 'anthropic', 'vllm', 'llamacpp'],
+            'default': 'openai',
         },
         'embedding_model': {
             'type': 'str',
@@ -217,7 +246,11 @@ template = Template(
         },
         'table_name': {
             'type': 'str',
-            'default': '_sample_text_vector_search'
+            'default': '_sample_rag'
+        },
+        'output_prefix': {
+            'type': 'str',
+            'default': OUTPUT_PREFIX,
         }
     }
 )

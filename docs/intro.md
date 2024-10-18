@@ -1,5 +1,5 @@
 ---
-description: Find detailed technical documentation for Superduper's AI and database integration solutions. Access comprehensive guides, API references, and tutorials to effectively implement and utilize SuperDuper technologies in your projects. (Formerly SuperDuperDB)
+description: Find detailed technical documentation for Superduper's AI and database integration solutions. Access comprehensive guides, API references, and tutorials to effectively implement and utilize Superduper technologies in your projects. (Formerly SuperDuperDB)
 ---
 
 <head>

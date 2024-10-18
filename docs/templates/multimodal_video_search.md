@@ -1,16 +1,8 @@
----
-sidebar_label: Multimodal vector search - Video
-filename: build.md
----
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-
-
-<!-- TABS -->
 # Multimodal vector search - Video
 
 <!-- TABS -->
 ## Connect to superduper
+
 
 ```python
 from superduper import superduper
@@ -20,6 +12,7 @@ db = superduper('mongomock://test_db')
 
 <!-- TABS -->
 ## Get useful sample data
+
 
 ```python
 !curl -O https://superduperdb-public-demo.s3.amazonaws.com/videos.zip && unzip videos.zip
@@ -41,6 +34,7 @@ SuperduperDB supports automatic data conversion, so users don’t need to worry 
 
 It also supports custom data conversion methods for transforming data, such as defining the following Datatype.
 
+
 ```python
 from superduper import DataType
 
@@ -54,6 +48,7 @@ datatype = DataType(
 <!-- TABS -->
 ## Setup tables or collections
 
+
 ```python
 from superduper.components.table import Table
 from superduper import Schema
@@ -62,9 +57,11 @@ schema = Schema(identifier="schema", fields={"x": datatype})
 table = Table("docs", schema=schema)
 ```
 
+
 ```python
 db.apply(table)
 ```
+
 
 ```python
 db['docs'].insert(datas).execute()
@@ -79,6 +76,7 @@ If your data is already chunked (e.g. short text snippets or audio) or if you
 are searching through something like images, which can't be chunked, then this
 won't be necessary.
 :::
+
 
 ```python
 # !pip install opencv-python
@@ -134,6 +132,7 @@ def chunker(video_file):
 
 Now we apply this chunker to the data by wrapping the chunker in `Listener`:
 
+
 ```python
 from superduper import Listener
 
@@ -147,6 +146,7 @@ upstream_listener = Listener(
 )
 ```
 
+
 ```python
 db.apply(upstream_listener)
 ```
@@ -156,21 +156,21 @@ db.apply(upstream_listener)
 We define the output data type of a model as a vector for vector transformation.
 
 
-<Tabs>
-    <TabItem value="MongoDB" label="MongoDB" default>
-        ```python
-        from superduper.components.vector_index import vector
-        output_datatype = vector(shape=(1024,))        
-        ```
-    </TabItem>
-    <TabItem value="SQL" label="SQL" default>
-        ```python
-        from superduper.components.vector_index import sqlvector
-        output_datatype = sqlvector(shape=(1024,))        
-        ```
-    </TabItem>
-</Tabs>
+```python
+# <tab: MongoDB>
+from superduper.components.vector_index import vector
+output_datatype = vector(shape=(1024,))
+```
+
+
+```python
+# <tab: SQL>
+from superduper.components.vector_index import sqlvector
+output_datatype = sqlvector(shape=(1024,))
+```
+
 Then define two models, one for text embedding and one for image embedding.
+
 
 ```python
 # !pip install git+https://github.com/openai/CLIP.git
@@ -205,6 +205,7 @@ Because we use multimodal models, we define different keys to specify which mode
 
 ## Create vector-index
 
+
 ```python
 from superduper import VectorIndex, Listener
 
@@ -226,9 +227,11 @@ vector_index = VectorIndex(
 )
 ```
 
+
 ```python
 db.apply(vector_index)
 ```
+
 
 ```python
 from superduper import Application
@@ -242,6 +245,7 @@ app = Application(
 )
 ```
 
+
 ```python
 db.apply(app)
 ```
@@ -250,10 +254,12 @@ db.apply(app)
 
 We can perform the vector searches using text description:
 
+
 ```python
 from superduper import Document
 item = Document({'text': "A single red and a blue player battle for the ball"})
 ```
+
 
 ```python
 from superduper import Document
@@ -262,12 +268,14 @@ item = Document({'text': "Some monkeys playing"})
 
 Once we have this search target, we can execute a search as follows.
 
+
 ```python
 select = db[upstream_listener.outputs].like(item, vector_index='my-vector-index', n=5).select()
 results = list(db.execute(select))
 ```
 
 ## Visualize Results
+
 
 ```python
 from IPython.display import display
@@ -279,10 +287,12 @@ for result in results:
 
 You can add new data; once the data is added, all related models will perform calculations according to the underlying constructed model and listener, simultaneously updating the vector index to ensure that each query uses the latest data.
 
+
 ```python
 new_datas = [{'x': data[-1]}]
 ids = db['docs'].insert(new_datas).execute()
 ```
+
 
 ```python
 from superduper import Template
@@ -290,7 +300,7 @@ from superduper import Template
 t = Template('video-search-template', template=app, substitutions={'docs': 'content_table'})
 ```
 
+
 ```python
 t.export('.')
 ```
-
