@@ -130,7 +130,7 @@ This layer is composed of several important components, encompassing primary dat
 We want to make Superduper the most inclusive and flexible AI-data framework around.
 
 :::note
-Superduper pledges to retain the Apache 2.0 license as a key cornerstone 
+Superduper is licensed under the Apache 2.0 license as a key cornerstone 
 of its philosophy and community ethos.
 :::
 

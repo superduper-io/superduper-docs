@@ -11,7 +11,6 @@ pip install superduper_pillow
 
 ## API
 
-
 - [Code](https://github.com/superduper-io/superduper/tree/main/plugins/pillow)
 - [API-docs](/docs/api/plugins/superduper_pillow)
 

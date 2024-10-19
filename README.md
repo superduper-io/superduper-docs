@@ -30,6 +30,16 @@ It will do both and show you a result. You have to run it again, if you want to 
 
 ## Build
 
+To include the notebooks a template from the open-source project, check out the `superduper` project into the same parent directory.
+
+Then run:
+
+```bash
+jupyter nbconvert ../superduper/templates/$name/build.ipynb --clear-output
+jupyter nbconvert ../superduper/templates/$name/build.ipynb --to markdown
+mv ../superduper/templates/$name/build.md docs/templates/$name.md
+```
+
 Generate static content into the `build` directory using the following command. The output can be served using any static content hosting service.
 
 ```bash
