@@ -131,6 +131,8 @@ const sidebars = {
         id: 'packaging_api/overview',
       },
       items: [
+        'packaging_api/building_templates',
+        'packaging_api/plugins',
         'packaging_api/superduper_protocol',
       ],
     },
