@@ -1,13 +1,5 @@
 # Simple retrieval augmented generation with OpenAI
 
-<!-- TABS -->
-## Connect to superduper
-
-:::note
-Note that this is only relevant if you are running superduper in development mode.
-Otherwise refer to "Configuring your production system".
-:::
-
 
 ```python
 APPLY = True
@@ -237,8 +229,8 @@ from superduper.components.dataset import RemoteData
 template = Template(
     'simple_rag',
     template=app,
-    substitutions={COLLECTION_NAME: 'table_name', OUTPUT_PREFIX: 'output_prefix', 'mongodb': 'databackend'},
-    template_variables=['table_name', 'id_field', 'output_prefix', 'databackend'],
+    substitutions={COLLECTION_NAME: 'table_name', 'mongodb': 'databackend'},
+    template_variables=['table_name', 'id_field', 'databackend'],
     default_table=Table(
         'sample_simple_rag',
         schema=Schema('sample_simple_rag/schema', fields={'x': 'str'}),

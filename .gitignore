@@ -3,3 +3,4 @@
 /.docusaurus
 /templates
 **/**.ipynb_checkpoints
+/test

@@ -7,7 +7,7 @@
 ```python
 asdict(obj,
      *,
-     copy_method=<function copy at 0x10104bd00>) -> Dict[str,
+     copy_method=<function copy at 0x104cf7d00>) -> Dict[str,
      Any]
 ```
 | Parameter | Description |

@@ -32,7 +32,7 @@ CDC(self,
      artifacts: 'dc.InitVar[t.Optional[t.Dict]]' = None,
      cache: 't.Optional[bool]' = True,
      status: 't.Optional[Status]' = None,
-     cdc_table: str = <property object at 0x10489fb50>) -> None
+     cdc_table: str = <property object at 0x11659f790>) -> None
 ```
 | Parameter | Description |
 |-----------|-------------|

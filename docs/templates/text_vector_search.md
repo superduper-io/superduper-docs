@@ -1,13 +1,5 @@
 # Text vector search
 
-<!-- TABS -->
-## Connect to superduper
-
-:::note
-Note that this is only relevant if you are running superduper in development mode.
-Otherwise refer to "Configuring your production system".
-:::
-
 
 ```python
 APPLY = False
