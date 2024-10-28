@@ -12,84 +12,31 @@ A base class for configuration dataclasses.
 This class allows for easy updating of configuration dataclasses
 with a dictionary of parameters.
 
-## `CDCConfig` 
-
-```python
-CDCConfig(self,
-     uri: Optional[str] = None,
-     strategy: Union[superduper.base.config.PollingStrategy,
-     superduper.base.config.LogBasedStrategy,
-     NoneType] = None) -> None
-```
-| Parameter | Description |
-|-----------|-------------|
-| uri | The URI for the CDC service |
-| strategy | The strategy to use for CDC |
-
-Describes the configuration for change data capture.
-
-## `CDCStrategy` 
-
-```python
-CDCStrategy(self,
-     type: str) -> None
-```
-| Parameter | Description |
-|-----------|-------------|
-| type | The type of CDC strategy |
-
-Base CDC strategy dataclass.
-
-## `Cluster` 
-
-```python
-Cluster(self,
-     compute: superduper.base.config.Compute = None,
-     vector_search: superduper.base.config.VectorSearch = None,
-     rest: superduper.base.config.Rest = None,
-     cdc: superduper.base.config.CDCConfig = None) -> None
-```
-| Parameter | Description |
-|-----------|-------------|
-| compute | The URI for compute - None: run all jobs in local mode i.e. simple function call - "ray://host:port": Run all jobs on a remote ray cluster |
-| vector_search | The URI for the vector search service - None: Run vector search on local - `f"http://{host}:{port}"`: Connect a remote vector search service |
-| rest | The URI for the REST service - `f"http://{host}:{port}"`: Connect a remote vector search service |
-| cdc | The URI for the change data capture service (if "None" then no cdc assumed) None: Run cdc on local as a thread. - `f"{http://{host}:{port}"`: Connect a remote cdc service |
-
-Describes a connection to distributed work via Ray.
-
-## `Compute` 
-
-```python
-Compute(self,
-     uri: Optional[str] = None,
-     compute_kwargs: Dict = None) -> None
-```
-| Parameter | Description |
-|-----------|-------------|
-| uri | The URI for the compute service |
-| compute_kwargs | The keyword arguments to pass to the compute service |
-
-Describes the configuration for distributed computing.
-
 ## `Config` 
 
 ```python
 Config(self,
      envs: dataclasses.InitVar[typing.Optional[typing.Dict[str,
      str]]] = None,
-     data_backend: str = 'mongodb://localhost:27017/test_db',
+     data_backend: str = 'mongodb://mongodb:27017/test_db',
      lance_home: str = '.superduper/vector_indices',
      artifact_store: Optional[str] = None,
      metadata_store: Optional[str] = None,
-     cluster: superduper.base.config.Cluster = None,
-     retries: superduper.base.config.Retry = None,
-     downloads: superduper.base.config.Downloads = None,
+     vector_search_engine: str = 'local',
+     cluster_engine: str = 'local',
+     retries: superduper.base.config.Retry = <factory>,
+     downloads: superduper.base.config.Downloads = <factory>,
      fold_probability: float = 0.05,
      log_level: superduper.base.config.LogLevel = <LogLevel.INFO: 'INFO'>,
      logging_type: superduper.base.config.LogType = <LogType.SYSTEM: 'SYSTEM'>,
-     bytes_encoding: superduper.base.config.BytesEncoding = <BytesEncoding.BYTES: 'Bytes'>,
-     auto_schema: bool = True) -> None
+     log_colorize: bool = True,
+     force_apply: bool = False,
+     bytes_encoding: superduper.base.config.BytesEncoding = <BytesEncoding.BYTES: 'bytes'>,
+     auto_schema: bool = True,
+     json_native: bool = True,
+     output_prefix: str = '_outputs__',
+     vector_search_kwargs: Dict = <factory>,
+     rest: superduper.base.config.RestConfig = <factory>) -> None
 ```
 | Parameter | Description |
 |-----------|-------------|
@@ -98,14 +45,21 @@ Config(self,
 | lance_home | The home directory for the Lance vector indices, Default: .superduper/vector_indices |
 | artifact_store | The URI for the artifact store |
 | metadata_store | The URI for the metadata store |
-| cluster | Settings distributed computing and change data capture |
+| vector_search_engine | The engine to use for vector search |
+| cluster_engine | The engine to use for operating a distributed cluster |
 | retries | Settings for retrying failed operations |
 | downloads | Settings for downloading files |
 | fold_probability | The probability of validation fold |
 | log_level | The severity level of the logs |
 | logging_type | The type of logging to use |
+| force_apply | Whether to force apply the configuration |
 | bytes_encoding | The encoding of bytes in the data backend |
 | auto_schema | Whether to automatically create the schema. If True, the schema will be created if it does not exist. |
+| json_native | Whether the databackend supports json natively or not. |
+| log_colorize | Whether to colorize the logs |
+| output_prefix | The prefix for the output table and output field key |
+| vector_search_kwargs | The keyword arguments to pass to the vector search |
+| rest | Settings for rest server. |
 
 The data class containing all configurable superduper values.
 
@@ -115,7 +69,7 @@ The data class containing all configurable superduper values.
 Downloads(self,
      folder: Optional[str] = None,
      n_workers: int = 0,
-     headers: Dict = None,
+     headers: Dict = <factory>,
      timeout: Optional[int] = None) -> None
 ```
 | Parameter | Description |
@@ -127,50 +81,19 @@ Downloads(self,
 
 Describes the configuration for downloading files.
 
-## `LogBasedStrategy` 
+## `RestConfig` 
 
 ```python
-LogBasedStrategy(self,
-     type: str = 'logbased',
-     resume_token: Optional[Dict[str,
-     str]] = None) -> None
-```
-| Parameter | Description |
-|-----------|-------------|
-| resume_token | The resume token to use for log-based CDC |
-| type | The type of CDC strategy |
-
-Describes a log-based strategy for change data capture.
-
-## `PollingStrategy` 
-
-```python
-PollingStrategy(self,
-     type: 'str' = 'incremental',
-     auto_increment_field: Optional[str] = None,
-     frequency: float = 3600) -> None
-```
-| Parameter | Description |
-|-----------|-------------|
-| auto_increment_field | The field to use for auto-incrementing |
-| frequency | The frequency to poll for changes |
-| type | The type of CDC strategy |
-
-Describes a polling strategy for change data capture.
-
-## `Rest` 
-
-```python
-Rest(self,
-     uri: Optional[str] = None,
+RestConfig(self,
+     uri: str = 'localhost:8000',
      config: Optional[str] = None) -> None
 ```
 | Parameter | Description |
 |-----------|-------------|
-| uri | The URI for the REST service |
-| config | The path to the config yaml file for the REST service |
+| uri | Rest server uri. |
+| config | Path configuration file. |
 
-Describes the configuration for the REST service.
+Configuratin for basic rest server.
 
 ## `Retry` 
 
@@ -189,20 +112,4 @@ Retry(self,
 | wait_multiplier | The multiplier for the wait time between attempts |
 
 Describes how to retry using the `tenacity` library.
-
-## `VectorSearch` 
-
-```python
-VectorSearch(self,
-     uri: Optional[str] = None,
-     type: str = 'in_memory',
-     backfill_batch_size: int = 100) -> None
-```
-| Parameter | Description |
-|-----------|-------------|
-| uri | The URI for the vector search service |
-| type | The type of vector search service |
-| backfill_batch_size | The size of the backfill batch |
-
-Describes the configuration for vector search.
 

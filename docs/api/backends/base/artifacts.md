@@ -22,12 +22,14 @@ Error when saving artifact in artifact store fails.
 ```python
 ArtifactStore(self,
      conn: Any,
-     name: Optional[str] = None)
+     name: Optional[str] = None,
+     flavour: Optional[str] = None)
 ```
 | Parameter | Description |
 |-----------|-------------|
 | conn | connection to the meta-data store |
 | name | Name to identify DB using the connection |
+| flavour | Flavour of the artifact store |
 
 Abstraction for storing large artifacts separately from primary data.
 

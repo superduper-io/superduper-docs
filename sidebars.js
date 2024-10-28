@@ -146,6 +146,7 @@ const sidebars = {
         'customize/model',
         'customize/training_models',
         'customize/cdc',
+        'customize/template',
       ],
     },
     {

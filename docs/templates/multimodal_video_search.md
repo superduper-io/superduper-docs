@@ -1,12 +1,18 @@
 # Multimodal vector search - Video
 
+
+```python
+APPLY = True
+TABLE_NAME = 'docs'
+```
+
 <!-- TABS -->
 ## Connect to superduper
 
 
 ```python
 from superduper import superduper
-  
+
 db = superduper('mongomock://test_db')
 ```
 
@@ -15,16 +21,22 @@ db = superduper('mongomock://test_db')
 
 
 ```python
-!curl -O https://superduperdb-public-demo.s3.amazonaws.com/videos.zip && unzip videos.zip
-import os
-from superduper.ext.pillow import pil_image
+def getter():
+    import os
+    import subprocess
+    subprocess.run(['rm', 'videos.zip'])
+    subprocess.run(['rm', '-rf', 'videos'])
+    subprocess.run(['curl', '-O', 'https://superduperdb-public-demo.s3.amazonaws.com/videos.zip'])
+    subprocess.run(['unzip', 'videos.zip'])
+    subprocess.run(['rm', 'videos.zip'])
+    data = [{'x': f'videos/{x}'} for x in os.listdir('./videos')]
+    return data[:2]
+```
 
-data = [f'videos/{x}' for x in os.listdir('./videos')]
-sample_datapoint = data[-1]
 
-chunked_model_datatype = pil_image
-
-datas = [{'x': d} for d in data[:3]]
+```python
+if APPLY:
+    data = getter()
 ```
 
 <!-- TABS -->
@@ -34,17 +46,6 @@ SuperduperDB supports automatic data conversion, so users don’t need to worry 
 
 It also supports custom data conversion methods for transforming data, such as defining the following Datatype.
 
-
-```python
-from superduper import DataType
-
-# Create an instance of the Encoder with the identifier 'video_on_file' and load_hybrid set to False
-datatype = DataType(
-    identifier='video_on_file',
-    encodable='file',
-)
-```
-
 <!-- TABS -->
 ## Setup tables or collections
 
@@ -52,19 +53,19 @@ datatype = DataType(
 ```python
 from superduper.components.table import Table
 from superduper import Schema
+from superduper.components.datatype import file_lazy
 
-schema = Schema(identifier="schema", fields={"x": datatype})
-table = Table("docs", schema=schema)
+schema = Schema(identifier="schema", fields={"x": file_lazy})
+table = Table(TABLE_NAME, schema=schema)
+
+if APPLY:
+    db.apply(table, force=True)
 ```
 
 
 ```python
-db.apply(table)
-```
-
-
-```python
-db['docs'].insert(datas).execute()
+if APPLY:
+    db[TABLE_NAME].insert(datas).execute()
 ```
 
 <!-- TABS -->
@@ -79,7 +80,6 @@ won't be necessary.
 
 
 ```python
-# !pip install opencv-python
 import cv2
 import tqdm
 from PIL import Image
@@ -87,13 +87,10 @@ from superduper.ext.pillow import pil_image
 from superduper import model, Schema
 
 
-@model(
-    flatten=True,
-    model_update_kwargs={},
-)
+@model
 def chunker(video_file):
     # Set the sampling frequency for frames
-    sample_freq = 10
+    sample_freq = 100
     
     # Open the video file using OpenCV
     cap = cv2.VideoCapture(video_file)
@@ -140,15 +137,17 @@ upstream_listener = Listener(
     model=chunker,
     select=db['docs'].select(),
     key='x',
-    uuid='chunker',
     identifier='chunker',
-    upstream=[table]
+    flatten=True,
+    upstream=[table],
+    predict_kwargs={'max_chunk_size': 1},
 )
 ```
 
 
 ```python
-db.apply(upstream_listener)
+if APPLY:
+    db.apply(upstream_listener, force=True)
 ```
 
 ## Build multimodal embedding models
@@ -157,14 +156,6 @@ We define the output data type of a model as a vector for vector transformation.
 
 
 ```python
-# <tab: MongoDB>
-from superduper.components.vector_index import vector
-output_datatype = vector(shape=(1024,))
-```
-
-
-```python
-# <tab: SQL>
 from superduper.components.vector_index import sqlvector
 output_datatype = sqlvector(shape=(1024,))
 ```
@@ -173,31 +164,27 @@ Then define two models, one for text embedding and one for image embedding.
 
 
 ```python
-# !pip install git+https://github.com/openai/CLIP.git
 import clip
-from superduper import vector
+from superduper import vector, imported
 from superduper_torch import TorchModel
 
-# Load the CLIP model and obtain the preprocessing function
-model, preprocess = clip.load("ViT-B/32", device='cpu')
+vit = imported(clip.load)("ViT-B/32", device='cpu')
 
-# Create a TorchModel for text encoding
 compatible_model = TorchModel(
-    identifier='clip_text', # Unique identifier for the model
-    object=model, # CLIP model
-    preprocess=lambda x: clip.tokenize(x)[0],  # Model input preprocessing using CLIP 
-    postprocess=lambda x: x.tolist(), # Convert the model output to a list
-    datatype=output_datatype,  # Vector encoder with shape (1024,)
-    forward_method='encode_text', # Use the 'encode_text' method for forward pass 
+    identifier='clip_text',
+    object=vit[0],
+    preprocess=lambda x: clip.tokenize(x)[0], 
+    postprocess=lambda x: x.tolist(),
+    datatype=output_datatype,
+    forward_method='encode_text',
 )
 
-# Create a TorchModel for visual encoding
 model = TorchModel(
-    identifier='clip_image',  # Unique identifier for the model
-    object=model.visual,  # Visual part of the CLIP model    
-    preprocess=preprocess, # Visual preprocessing using CLIP
-    postprocess=lambda x: x.tolist(), # Convert the output to a list 
-    datatype=output_datatype, # Vector encoder with shape (1024,)
+    identifier='clip_image', 
+    object=vit[0].visual,
+    preprocess=vit[1],
+    postprocess=lambda x: x.tolist(),
+    datatype=output_datatype,
 )
 ```
 
@@ -212,14 +199,14 @@ from superduper import VectorIndex, Listener
 vector_index = VectorIndex(
     'my-vector-index',
     indexing_listener=Listener(
-        key=upstream_listener.outputs + '.image',      # the `Document` key `model` should ingest to create embedding
-        select=db[upstream_listener.outputs].select(),       # a `Select` query telling which data to search over
-        model=model,         # a `_Predictor` how to convert data to embeddings
+        key=upstream_listener.outputs + '.image',
+        select=db[upstream_listener.outputs].select(),
+        model=model,
         identifier=f'{model.identifier}-listener'
     ),
     compatible_listener=Listener(
-        key='text',      # the `Document` key `model` should ingest to create embedding
-        model=compatible_model,         # a `_Predictor` how to convert data to embeddings
+        key='text',
+        model=compatible_model,
         select=None,
         identifier='compatible-listener',
     ),
@@ -229,7 +216,8 @@ vector_index = VectorIndex(
 
 
 ```python
-db.apply(vector_index)
+if APPLY:
+    db.apply(vector_index)
 ```
 
 
@@ -247,7 +235,8 @@ app = Application(
 
 
 ```python
-db.apply(app)
+if APPLY:
+    db.apply(app)
 ```
 
 ## Perform a vector search
@@ -268,36 +257,45 @@ item = Document({'text': "Some monkeys playing"})
 
 Once we have this search target, we can execute a search as follows.
 
-
-```python
-select = db[upstream_listener.outputs].like(item, vector_index='my-vector-index', n=5).select()
-results = list(db.execute(select))
-```
-
 ## Visualize Results
 
 
 ```python
-from IPython.display import display
-for result in results:
-    display(Document(result.unpack())[upstream_listener.outputs + '.image'])
-```
+if APPLY:
+    from IPython.display import display
+    select = db[upstream_listener.outputs].like(item, vector_index='my-vector-index', n=5).select()
 
-## Check the system stays updated
-
-You can add new data; once the data is added, all related models will perform calculations according to the underlying constructed model and listener, simultaneously updating the vector index to ensure that each query uses the latest data.
-
-
-```python
-new_datas = [{'x': data[-1]}]
-ids = db['docs'].insert(new_datas).execute()
+    for result in select.execute():
+        display(Document(result.unpack())[upstream_listener.outputs + '.image'])
 ```
 
 
 ```python
-from superduper import Template
+from superduper import Template, Table, Schema
+from superduper.components.dataset import RemoteData
 
-t = Template('video-search-template', template=app, substitutions={'docs': 'content_table'})
+t = Template(
+    'multimodal_video_search', 
+    template=app,
+    substitutions={'docs': 'table_name'},
+    default_table=Table(
+        'sample_multimodal_video_search',
+        schema=Schema(
+            'sample_multimodal_video_search/schema',
+            fields={'x': file_lazy},
+        ),
+        data=RemoteData(
+            'sample_videos',
+            getter=getter,
+        )
+    ),
+    types={
+        'table_name': {
+            'type': 'str',
+            'default': 'sample_multimodal_video_search',
+        }
+    }
+)
 ```
 
 

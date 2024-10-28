@@ -10,9 +10,15 @@ Otherwise refer to "Configuring your production system".
 
 
 ```python
+APPLY = True
+TABLE_NAME = 'sample_llm_finetuning'
+```
+
+
+```python
 from superduper import superduper
 
-db = superduper('mongomock:///test_db')
+db = superduper('mongomock://test_db', force_apply=True)
 ```
 
 <!-- TABS -->
@@ -22,144 +28,53 @@ The following are examples of training data in different formats.
 
 
 ```python
-# <tab: Text>
 from datasets import load_dataset
 from superduper.base.document import Document
-dataset_name = "timdettmers/openassistant-guanaco"
-dataset = load_dataset(dataset_name)
 
-train_dataset = dataset["train"]
-eval_dataset = dataset["test"]
+def getter():
 
-train_documents = [
-    Document({**example, "_fold": "train"})
-    for example in train_dataset
-]
-eval_documents = [
-    Document({**example, "_fold": "valid"})
-    for example in eval_dataset
-]
+    dataset_name = "timdettmers/openassistant-guanaco"
+    dataset = load_dataset(dataset_name)
+    
+    train_dataset = dataset["train"]
+    eval_dataset = dataset["test"]
+    
+    train_documents = [{**example, "_fold": "train"} for example in train_dataset][:10]
+    eval_documents = [{**example, "_fold": "valid"} for example in eval_dataset][:5]
+    
+    data = train_documents + eval_documents
 
-datas = train_documents + eval_documents
+    return data
 ```
 
 
 ```python
-# <tab: Prompt-Response>
-from datasets import load_dataset
-
-from superduper.base.document import Document
-dataset_name = "mosaicml/instruct-v3"
-dataset = load_dataset(dataset_name)
-
-train_dataset = dataset["train"]
-eval_dataset = dataset["test"]
-
-train_documents = [
-    Document({**example, "_fold": "train"})
-    for example in train_dataset
-]
-eval_documents = [
-    Document({**example, "_fold": "valid"})
-    for example in eval_dataset
-]
-
-datas = train_documents + eval_documents
-```
-
-
-```python
-# <tab: Chat>
-from datasets import load_dataset
-from superduper.base.document import Document
-dataset_name = "philschmid/dolly-15k-oai-style"
-dataset = load_dataset(dataset_name)['train'].train_test_split(0.9)
-
-train_dataset = dataset["train"]
-eval_dataset = dataset["test"]
-
-train_documents = [
-    Document({**example, "_fold": "train"})
-    for example in train_dataset
-]
-eval_documents = [
-    Document({**example, "_fold": "valid"})
-    for example in eval_dataset
-]
-
-datas = train_documents + eval_documents
+if APPLY:
+    data = getter()
 ```
 
 We can define different training parameters to handle this type of data.
 
 
 ```python
-# <tab: Text>
-# Function for transformation after extracting data from the database
 transform = None
 key = ('text')
 training_kwargs=dict(dataset_text_field="text")
-```
-
-
-```python
-# <tab: Prompt-Response>
-# Function for transformation after extracting data from the database
-def transform(prompt, response):
-    return {'text': prompt + response + "</s>"}
-
-key = ('prompt', 'response')
-training_kwargs=dict(dataset_text_field="text")
-```
-
-
-```python
-# <tab: Chat>
-# Function for transformation after extracting data from the database
-transform = None
-
-key = ('messages')
-training_kwargs=None
 ```
 
 Example input_text and output_text
 
 
 ```python
-# <tab: Text>
-data = datas[0]
-input_text, output_text = data["text"].rsplit("### Assistant: ", maxsplit=1)
-input_text += "### Assistant: "
-output_text = output_text.rsplit("### Human:")[0]
-print("Input: --------------")
-print(input_text)
-print("Response: --------------")
-print(output_text)
-```
-
-
-```python
-# <tab: Prompt-Response>
-data = datas[0]
-input_text = data["prompt"]
-output_text = data["response"]
-print("Input: --------------")
-print(input_text)
-print("Response: --------------")
-print(output_text)
-```
-
-
-```python
-# <tab: Chat>
-data = datas[0]
-messages = data["messages"]
-input_text = messages[:-1]
-output_text = messages[-1]["content"]
-print("Input: --------------")
-print(input_text)
-print("Response: --------------")
-print(output_text)
+if APPLY:
+    d = data[0]
+    input_text, output_text = d["text"].rsplit("### Assistant: ", maxsplit=1)
+    input_text += "### Assistant: "
+    output_text = output_text.rsplit("### Human:")[0]
+    print("Input: --------------")
+    print(input_text)
+    print("Response: --------------")
+    print(output_text)
 ```
 
 <!-- TABS -->
@@ -169,11 +84,11 @@ After turning on auto_schema, we can directly insert data, and superduper will a
 
 
 ```python
-from superduper import Document
+table_or_collection = db[TABLE_NAME]
 
-table_or_collection = db['docs']
+if APPLY:
+    table_or_collection.insert(data).execute()
 
-ids = db.execute(table_or_collection.insert([Document(data) for data in datas]))
 select = table_or_collection.select()
 ```
 
@@ -181,15 +96,9 @@ select = table_or_collection.select()
 
 
 ```python
-model_name = "facebook/opt-125m"
+model_name = "Qwen/Qwen2.5-0.5B"
 model_kwargs = dict()
 tokenizer_kwargs = dict()
-
-# or 
-# model_name = "mistralai/Mistral-7B-Instruct-v0.2"
-# token = "hf_xxxx"
-# model_kwargs = dict(token=token)
-# tokenizer_kwargs = dict(token=token)
 ```
 
 <!-- TABS -->
@@ -207,9 +116,9 @@ trainer = LLMTrainer(
     identifier="llm-finetune-trainer",
     output_dir="output/finetune",
     overwrite_output_dir=True,
-    num_train_epochs=3,
-    save_total_limit=3,
-    logging_steps=10,
+    num_train_epochs=2,
+    save_total_limit=10,
+    logging_steps=1,
     evaluation_strategy="steps",
     save_steps=100,
     eval_steps=100,
@@ -221,45 +130,8 @@ trainer = LLMTrainer(
     select=select,
     transform=transform,
     training_kwargs=training_kwargs,
+    use_lora=True,
 )
-```
-
-
-```python
-# <tab: Lora>
-trainer.use_lora = True
-```
-
-
-```python
-# <tab: QLora>
-trainer.use_lora = True
-trainer.bits = 4
-```
-
-
-```python
-# <tab: Deepspeed>
-!pip install deepspeed
-deepspeed = {
-    "train_batch_size": "auto",
-    "train_micro_batch_size_per_gpu": "auto",
-    "gradient_accumulation_steps": "auto",
-    "zero_optimization": {
-        "stage": 2,
-    },
-}
-trainer.use_lora = True
-trainer.bits = 4
-trainer.deepspeed = deepspeed
-```
-
-
-```python
-# <tab: Multi-GPUS>
-trainer.use_lora = True
-trainer.bits = 4
-trainer.num_gpus = 2
 ```
 
 Create a trainable LLM model and add it to the database, then the training task will run automatically.
@@ -273,8 +145,66 @@ llm = LLM(
     model_kwargs=model_kwargs,
     tokenizer_kwargs=tokenizer_kwargs,
 )
+```
 
-db.apply(llm)
+
+```python
+if APPLY:
+    db.apply(llm, force=True)
+```
+
+
+```python
+from superduper import Template, Table, Schema
+from superduper.components.dataset import RemoteData
+
+llm.trainer.use_lora = "<var:use_lora>"
+llm.trainer.num_train_epochs = "<var:num_train_epochs>"
+
+t = Template(
+    'llm-finetune',
+    template=llm,
+    substitutions={
+        TABLE_NAME: 'table_name',
+        model_name: 'model_name',
+    },
+    default_table=Table(
+        'sample_llm_finetuning',
+        schema=Schema(
+            'sample_llm_finetuning/schema',
+            fields={'x': 'str', 'y': 'int'},
+        ),
+        data=RemoteData(
+            'llm_finetuning',
+            getter=getter,
+        ),
+    ),
+    template_variables=['table_name', 'model_name', 'use_lora', 'num_train_epochs'],
+    types={
+        'collection': {
+            'type': 'str',
+            'default': 'dataset',
+        },
+        'model_name': {
+            'type': 'str',
+            'default': 'Qwen/Qwen2.5-0.5B',
+        },
+        'use_lora': {
+            'type': 'bool',
+            'default': True,
+        },
+        'num_train_epochs': {
+            'type': 'int',
+            'default': 3
+        },
+        'table_name': {
+            'type': 'str',
+            'default': 'sample_llm_finetuning',
+        }
+    }
+)
+
+t.export('.')
 ```
 
 ## Load the trained model
@@ -285,39 +215,12 @@ There are two methods to load a trained model:
 
 
 ```python
-# <tab: Load Trained Model Directly>
-llm = db.load("model", "llm")
+if APPLY:
+    llm = db.load("model", "llm")
 ```
 
 
 ```python
-# <tab: Use a specified checkpoint>
-from superduper_transformers import LLM
-
-experiment_id = db.show("checkpoint")[-1]
-version = None # None means the last checkpoint
-checkpoint = db.load("checkpoint", experiment_id, version=version)
-llm = LLM(
-    identifier="llm",
-    model_name_or_path=model_name,
-    adapter_id=checkpoint,
-    model_kwargs=dict(load_in_4bit=True)
-)
-```
-
-
-```python
-llm.predict(input_text, max_new_tokens=200)
-```
-
-
-```python
-from superduper import Template
-
-t = Template('llm-finetune', template=llm, substitutions={'docs': 'collection', model_name: 'model_name'})
-```
-
-
-```python
-t.export('.')
+if APPLY:
+    llm.predict(input_text, max_new_tokens=200)
 ```

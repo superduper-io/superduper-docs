@@ -6,15 +6,29 @@
 
 ```python
 MetaDataStore(self,
-     conn: Any,
-     name: Optional[str] = None)
+     uri: Optional[str] = None,
+     flavour: Optional[str] = None,
+     callback: Optional[Callable] = None)
 ```
 | Parameter | Description |
 |-----------|-------------|
-| conn | connection to the meta-data store |
-| name | Name to identify DB using the connection |
+| uri | URI to the databackend database. |
+| flavour | Flavour of the databackend. |
+| callback | Optional callback to create connection. |
 
 Abstraction for storing meta-data separately from primary data.
+
+## `MetaDataStoreProxy` 
+
+```python
+MetaDataStoreProxy(self,
+     backend)
+```
+| Parameter | Description |
+|-----------|-------------|
+| backend | Instance of `MetaDataStore`. |
+
+Proxy class to DataBackend which acts as middleware for performing fallbacks.
 
 ## `NonExistentMetadataError` 
 

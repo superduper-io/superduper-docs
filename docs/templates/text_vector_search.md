@@ -10,9 +10,8 @@ Otherwise refer to "Configuring your production system".
 
 
 ```python
-APPLY = True
-COLLECTION_NAME = '<var:table_name>' if not APPLY else '_sample_text_vector_search'
-ID_FIELD = '<var:id_field>' if not APPLY else '_id'
+APPLY = False
+COLLECTION_NAME = '<var:table_name>' if not APPLY else 'sample_text_vector_search'
 ```
 
 
@@ -28,11 +27,18 @@ db = superduper('mongomock:///test_db')
 
 ```python
 import json
+import requests
+import io
 
-with open('data.json', 'r') as f:
-    data = json.load(f)
+def getter():
+    response = requests.get('https://superduperdb-public-demo.s3.amazonaws.com/text.json')
+    return json.loads(response.content.decode('utf-8'))
+```
 
-data = [{'x': r} for r in data]
+
+```python
+if APPLY:
+    data = getter()
 ```
 
 <!-- TABS -->
@@ -47,7 +53,6 @@ if APPLY:
     ids = db.execute(db[COLLECTION_NAME].insert([Document(r) for r in data]))
 ```
 
-<!-- TABS -->
 ## Apply a chunker for search
 
 :::note
@@ -64,7 +69,7 @@ from superduper import Model
 class Chunker(Model):
     chunk_size: int = 200
     signature: str = 'singleton'
-    
+
     def predict(self, text):
         text = text.split()
         chunks = [' '.join(text[i:i + self.chunk_size]) for i in range(0, len(text), self.chunk_size)]
@@ -79,9 +84,9 @@ from superduper import Listener
 
 upstream_listener = Listener(
     model=Chunker('chunk_model', chunk_size=200, example='test ' * 50),
-    select=db[COLLECTION_NAME].select(ID_FIELD, 'x'),
+    select=db[COLLECTION_NAME].select(),
     key='x',
-    identifier='chunker',
+    identifier=f'chunker_{COLLECTION_NAME}',
     flatten=True,
 )
 ```
@@ -107,8 +112,6 @@ OpenAI:
 
 
 ```python
-import os
-
 from superduper.components.vector_index import sqlvector
 from superduper_openai import OpenAIEmbedding
 
@@ -119,7 +122,6 @@ Sentence-transformers
 
 
 ```python
-import sentence_transformers
 from superduper.components.vector_index import sqlvector
 from superduper_sentence_transformers import SentenceTransformer
 
@@ -150,7 +152,7 @@ embedding_model = ModelRouter(
 ```python
 from superduper import VectorIndex, Listener
 
-vector_index_name = 'vector-index'
+vector_index_name = f'vector-index-{COLLECTION_NAME}'
 
 vector_index = VectorIndex(
     vector_index_name,
@@ -158,7 +160,7 @@ vector_index = VectorIndex(
         key=upstream_listener.outputs,
         select=db[upstream_listener.outputs].select(),
         model=embedding_model,
-        identifier='embedding-listener',
+        identifier=f'embedding-listener-{COLLECTION_NAME}',
         upstream=[upstream_listener],
     )
 )
@@ -177,7 +179,7 @@ By applying the RAG model to the database, it will subsequently be accessible fo
 from superduper import Application
 
 app = Application(
-    'text-vector-search-app',
+    f'text-vector-search-app-{COLLECTION_NAME}',
     components=[
         upstream_listener,
         vector_index,
@@ -193,23 +195,75 @@ if APPLY:
 
 You can now load the model elsewhere and make predictions using the following command.
 
+
+```python
+search_term = 'tell me about the use of pylance and vector-search'
+
+vector_search_query = db[f'_outputs__chunker_{COLLECTION_NAME}'].like(
+    {f'_outputs__chunker_{COLLECTION_NAME}': search_term},
+    n=10,
+    vector_index=vector_index_name,
+).select()
+```
+
+
+```python
+if APPLY:
+    vector_search_query.tolist()
+```
+
+
+```python
+from superduper import QueryTemplate, CFG
+
+qt = QueryTemplate(
+    'vector_search',
+    template=vector_search_query,
+    substitutions={
+        COLLECTION_NAME: 'table_name',
+        search_term: 'search_term',
+        'mongodb': 'data_backend',
+    },
+    types={
+        'search_term': {
+            'type': 'str',
+            'default': 'enter your question here...',
+        },
+        'table_name': {
+            'type': 'str',
+            'default': 'sample_text_vector_search'
+        },
+        'data_backend': {
+            'type': 'mongodb',
+            'choices': ['mongodb', 'ibis'],
+            'default': 'mongodb'
+        }
+    }
+)
+```
+
 ## Create template
 
 
 ```python
-from superduper import Template
+from superduper import Template, CFG, Table, Schema
+from superduper.components.dataset import RemoteData
 
 template = Template(
     'text_vector_search',
     template=app,
-    data=data,
-    substitutions={'docs': 'table_name'},
-    template_variables=['embedding_model', 'table_name'],
+    default_table=Table(
+        'sample_text_vector_search',
+        schema=Schema('sample_text_vector_search/schema', fields={'x': 'str'}),
+        data=RemoteData(
+            'superduper-docs',
+            getter=getter,
+        )
+    ),
+    queries=[qt],
+    substitutions={COLLECTION_NAME: 'table_name', 'mongodb': 'data_backend'},
+    template_variables=['embedding_model', 'table_name', 'data_backend'],
     types={
-        'id_field': {
-            'type': 'str',
-            'default': '_id',
-        },
         'embedding_model': {
             'type': 'str',
             'choices': ['openai', 'sentence_transformers'],
@@ -217,7 +271,12 @@ template = Template(
         },
         'table_name': {
             'type': 'str',
-            'default': '_sample_text_vector_search'
+            'default': 'sample_text_vector_search'
+        },
+        'data_backend': {
+            'type': 'mongodb',
+            'choices': ['mongodb', 'ibis'],
+            'default': 'mongodb'
         }
     }
 )

@@ -31,41 +31,23 @@ parse_query(query: Union[str,
 
 Parse a string query into a query object.
 
-## `Model` 
-
-```python
-Model(self,
-     identifier: str,
-     db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
-     uuid: str = None,
-     parts: Sequence[Union[Tuple,
-     str]] = ()) -> None
-```
-| Parameter | Description |
-|-----------|-------------|
-| identifier | Identifier of the leaf. |
-| db | Datalayer instance. |
-| uuid | UUID of the leaf. |
-| parts | The parts of the query. |
-
-A model helper class for create a query to predict.
-
 ## `Query` 
 
 ```python
 Query(self,
-     identifier: str,
      db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
-     uuid: str = None,
+     uuid: None = <factory>,
      *,
-     parts: Sequence[Union[Tuple,
-     str]] = ()) -> None
+     identifier: str = '',
+     parts: None = <factory>,
+     table: str) -> None
 ```
 | Parameter | Description |
 |-----------|-------------|
 | identifier | Identifier of the leaf. |
 | db | Datalayer instance. |
 | uuid | UUID of the leaf. |
+| table | The table to use. |
 | parts | The parts of the query. |
 
 A query object.
@@ -73,13 +55,24 @@ A query object.
 This base class is used to create a query object that can be executed
 in the datalayer.
 
-## `TraceMixin` 
+## `Model` 
 
 ```python
-TraceMixin(self,
-     /,
-     *args,
-     **kwargs)
+Model(self,
+     db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
+     uuid: None = <factory>,
+     *,
+     identifier: str = '',
+     parts: None = <factory>,
+     table: str) -> None
 ```
-Mixin to add trace functionality to a query.
+| Parameter | Description |
+|-----------|-------------|
+| identifier | Identifier of the leaf. |
+| db | Datalayer instance. |
+| uuid | UUID of the leaf. |
+| table | The table to use. |
+| parts | The parts of the query. |
+
+A model helper class for create a query to predict.
 

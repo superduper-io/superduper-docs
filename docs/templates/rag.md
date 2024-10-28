@@ -11,34 +11,36 @@ Otherwise refer to "Configuring your production system".
 
 ```python
 APPLY = False
-COLLECTION_NAME = '<var:table_name>' if not APPLY else '_sample_rag'
+COLLECTION_NAME = '<var:table_name>' if not APPLY else 'sample_rag'
 ID_FIELD = '<var:id_field>' if not APPLY else 'id'
-OUTPUT_PREFIX = 'outputs__'
 ```
 
 
 ```python
 from superduper import superduper, CFG
 
-CFG.output_prefix = OUTPUT_PREFIX
 CFG.bytes_encoding = 'str'
 CFG.json_native = False
 
-db = superduper()
-```
-
-
-```python
-db.drop(force=True, data=True)
+db = superduper('mongomock://test_db')
 ```
 
 
 ```python
 import json
+import requests
+import io
 
-with open('data.json', 'r') as f:
-    data = json.load(f)
-data = [{'x': r} for r in data]
+def getter():
+    response = requests.get('https://superduperdb-public-demo.s3.amazonaws.com/text.json')
+    data = json.loads(response.content.decode('utf-8'))
+    return [{'x': r} for r in data]
+```
+
+
+```python
+if APPLY:
+    data = getter()
 ```
 
 <!-- TABS -->
@@ -305,14 +307,26 @@ You can now load the model elsewhere and make predictions using the following co
 
 
 ```python
-from superduper import Template
+from superduper import Template, Table, Schema
+from superduper.components.dataset import RemoteData
+
 
 template = Template(
     'rag',
     template=app,
-    data=data,
-    substitutions={'_sample_rag': 'table_name', OUTPUT_PREFIX: 'output_prefix'},
-    template_variables=['llm_model', 'embedding_model', 'table_name', 'id_field', 'output_prefix'],
+    default_table=Table(
+        'sample_rag',
+        schema=Schema(
+            'sample_rag/schema',
+            fields={'txt': 'str'},
+        ),
+        data=RemoteData(
+            'superduper-docs',
+            getter=getter,
+        )
+    ),
+    substitutions={COLLECTION_NAME: 'table_name'},
+    template_variables=['llm_model', 'embedding_model', 'table_name', 'id_field'],
     types={
         'id_field': {
             'type': 'str',
@@ -330,47 +344,13 @@ template = Template(
         },
         'table_name': {
             'type': 'str',
-            'default': '_sample_rag'
+            'default': 'sample_rag'
         },
-        'output_prefix': {
-            'type': 'str',
-            'default': OUTPUT_PREFIX,
-        }
     }
 )
 ```
 
 
 ```python
-
-```
-
-
-```python
-OUTPUT_PREFIX
-```
-
-
-```python
 template.export('.')
-```
-
-
-```python
-from superduper import Template
-```
-
-
-```python
-t = Template.read('.')
-```
-
-
-```python
-c = t()
-```
-
-
-```python
-c.info(4)
 ```

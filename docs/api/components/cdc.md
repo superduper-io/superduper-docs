@@ -1,11 +1,28 @@
-**`superduper.components.table`** 
+**`superduper.components.cdc`** 
 
-[Source code](https://github.com/superduper/superduper/blob/main/superduper/components/table.py)
+[Source code](https://github.com/superduper/superduper/blob/main/superduper/components/cdc.py)
 
-## `Table` 
+## `build_streaming_graph` 
 
 ```python
-Table(self,
+build_streaming_graph(table,
+     db: 'Datalayer')
+```
+| Parameter | Description |
+|-----------|-------------|
+| table | The table to build the graph from. |
+| db | Datalayer instance |
+
+Build a streaming graph from a table.
+
+The graph has as each node a component which
+ingests from the table, or ingests from
+a component which ingests from the table (etc.).
+
+## `CDC` 
+
+```python
+CDC(self,
      identifier: str,
      db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
      uuid: None = <factory>,
@@ -15,12 +32,7 @@ Table(self,
      artifacts: 'dc.InitVar[t.Optional[t.Dict]]' = None,
      cache: 't.Optional[bool]' = True,
      status: 't.Optional[Status]' = None,
-     schema: superduper.components.schema.Schema,
-     primary_id: str = 'id',
-     data: Union[List[Dict],
-     ForwardRef('Dataset'),
-     ForwardRef('RemoteData'),
-     NoneType] = None) -> None
+     cdc_table: str = <property object at 0x10489fb50>) -> None
 ```
 | Parameter | Description |
 |-----------|-------------|
@@ -32,9 +44,9 @@ Table(self,
 | plugins | A list of plugins to be used in the component. |
 | cache | (Optional) If set `true` the component will not be cached during primary job of the component i.e on a distributed cluster this component will be reloaded on every component task e.g model prediction. |
 | status | What part of the lifecycle the component is in. |
-| schema | The schema of the table |
-| primary_id | The primary id of the table |
-| data | Data to insert post creation |
+| cdc_table | Table which fires the triggers. |
 
-A component that represents a table in a database.
+Trigger a ion when a condition is met.
+
+***Note that this feature deploys on superduper.io Enterprise.***
 

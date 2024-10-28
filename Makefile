@@ -14,12 +14,15 @@ gen_docs: ## Generate Docs and API
 	npm i --legacy-peer-deps && npm run build
 	@echo "Build finished. The HTML pages are in docs/hr/build"
 
-DIRECTORY := ./templates
+DIRECTORY := ../superduper/templates
 FILES := $(shell ls $(DIRECTORY))
 
 compile_docs: ## Convert templates to markdown content
+	-ln -s ../superduper/test .
+	python build_api_docs.py
 	@for file in $(FILES); do \
 		echo "Processing $(DIRECTORY)/$$file..."; \
-		python to_docusaurus_markdown.py $(DIRECTORY)/$$file/build.ipynb; \
-		mv $(DIRECTORY)/$$file/build.md content/templates/$$file.md; \
+		jupyter nbconvert $(DIRECTORY)/$$file/build.ipynb --clear-output; \
+		jupyter nbconvert $(DIRECTORY)/$$file/build.ipynb --to markdown; \
+		mv $(DIRECTORY)/$$file/build.md docs/templates/$$file.md; \
 	done

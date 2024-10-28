@@ -6,13 +6,25 @@
 
 ```python
 BaseDataBackend(self,
-     conn: Any,
-     name: str)
+     uri: str,
+     flavour: Optional[str] = None)
 ```
 | Parameter | Description |
 |-----------|-------------|
-| conn | The connection to the databackend database. |
-| name | The name of the databackend. |
+| uri | URI to the databackend database. |
+| flavour | Flavour of the databackend. |
 
 Base data backend for the database.
+
+## `DataBackendProxy` 
+
+```python
+DataBackendProxy(self,
+     backend)
+```
+| Parameter | Description |
+|-----------|-------------|
+| backend | Instance of `BaseDataBackend`. |
+
+Proxy class to DataBackend which acts as middleware for performing fallbacks.
 

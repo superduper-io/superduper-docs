@@ -2,18 +2,6 @@
 
 [Source code](https://github.com/superduper/superduper/blob/main/superduper/base/exceptions.py)
 
-## `DatabackendException` 
-
-```python
-DatabackendException(self,
-     msg)
-```
-| Parameter | Description |
-|-----------|-------------|
-| msg | msg for BaseException |
-
-DatabackendException.
-
 ## `BaseException` 
 
 ```python
@@ -67,6 +55,18 @@ ComponentInUseWarning(self,
 | kwargs | **kwargs for Exception |
 
 Warning raised when a component is already in use.
+
+## `DatabackendException` 
+
+```python
+DatabackendException(self,
+     msg)
+```
+| Parameter | Description |
+|-----------|-------------|
+| msg | msg for BaseException |
+
+DatabackendException.
 
 ## `MetadataException` 
 
@@ -133,6 +133,21 @@ ServiceRequestException(self,
 | msg | msg for BaseException |
 
 ServiceRequestException.
+
+## `TableNotFoundError` 
+
+```python
+TableNotFoundError(self,
+     /,
+     *args,
+     **kwargs)
+```
+| Parameter | Description |
+|-----------|-------------|
+| args | *args for Exception |
+| kwargs | **kwargs for Exception |
+
+Table not found in database.
 
 ## `UnsupportedDatatype` 
 

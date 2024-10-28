@@ -2,6 +2,19 @@
 
 [Source code](https://github.com/superduper/superduper/blob/main/superduper/misc/special_dicts.py)
 
+## `recursive_update` 
+
+```python
+recursive_update(data,
+     replace_function: Callable)
+```
+| Parameter | Description |
+|-----------|-------------|
+| data | Dict, List, Tuple, Set |
+| replace_function | Callable |
+
+Recursively update data with a replace function.
+
 ## `diff` 
 
 ```python
@@ -22,20 +35,18 @@ _diff({'a': {'c': 3}, 'b': 2}, {'a': 2, 'b': 2})
 # {'a': ({'c': 3}, 2)}
 ```
 
-## `SuperDuperFlatEncode` 
+## `recursive_find` 
 
 ```python
-SuperDuperFlatEncode(self,
-     /,
-     *args,
-     **kwargs)
+recursive_find(data,
+     check_function: Callable)
 ```
 | Parameter | Description |
 |-----------|-------------|
-| args | *args for `dict` |
-| kwargs | **kwargs for `dict` |
+| data | Dict, List, Tuple, Set |
+| check_function | Callable |
 
-Dictionary for representing flattened encoding data.
+Recursively find items in data that satisfy a check function.
 
 ## `MongoStyleDict` 
 
@@ -51,6 +62,36 @@ MongoStyleDict(self,
 | kwargs | **kwargs for `dict` |
 
 Dictionary object mirroring how MongoDB handles fields.
+
+## `SuperDuperFlatEncode` 
+
+```python
+SuperDuperFlatEncode(self,
+     *args,
+     **kwargs)
+```
+| Parameter | Description |
+|-----------|-------------|
+| args | *args for `dict` |
+| kwargs | **kwargs for `dict` |
+
+Dictionary for representing flattened encoding data.
+
+## `ArgumentDefaultDict` 
+
+```python
+ArgumentDefaultDict(self,
+     *args,
+     default_factory,
+     **kwargs)
+```
+| Parameter | Description |
+|-----------|-------------|
+| args | *args for `dict` |
+| default_factory | Callable used to create default dependent on key |
+| kwargs | **kwargs for `dict` |
+
+Default-dictionary which takes the key as an argument to default factory.
 
 ## `IndexableDict` 
 

@@ -2,6 +2,19 @@
 
 [Source code](https://github.com/superduper/superduper/blob/main/superduper/misc/download.py)
 
+## `download_from_one` 
+
+```python
+download_from_one(r: superduper.base.document.Document)
+```
+| Parameter | Description |
+|-----------|-------------|
+| r | document to download from |
+
+Download content from a single document.
+
+This function will find all URIs in the document and download them.
+
 ## `download_content` 
 
 ```python
@@ -36,19 +49,6 @@ def update(key, id, bytes):
 download_content(None, None, ids=["0"], documents=[d]))
     
 ```
-
-## `download_from_one` 
-
-```python
-download_from_one(r: superduper.base.document.Document)
-```
-| Parameter | Description |
-|-----------|-------------|
-| r | document to download from |
-
-Download content from a single document.
-
-This function will find all URIs in the document and download them.
 
 ## `gather_uris` 
 
@@ -109,6 +109,66 @@ BaseDownloader(self,
 | raises | raises error ``True``/``False`` |
 
 Base class for downloading files.
+
+## `DownloadFiles` 
+
+```python
+DownloadFiles(self,
+     identifier: str,
+     db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
+     uuid: None = <factory>,
+     *,
+     upstream: "t.Optional[t.List['Component']]" = None,
+     plugins: "t.Optional[t.List['Plugin']]" = None,
+     artifacts: 'dc.InitVar[t.Optional[t.Dict]]' = None,
+     cache: 't.Optional[bool]' = True,
+     status: 't.Optional[Status]' = None,
+     signature: str = 'singleton',
+     datatype: 'EncoderArg' = None,
+     output_schema: 't.Optional[Schema]' = None,
+     model_update_kwargs: None = <factory>,
+     predict_kwargs: None = <factory>,
+     compute_kwargs: None = <factory>,
+     validation: 't.Optional[Validation]' = None,
+     metric_values: None = <factory>,
+     num_workers: int = (10,
+    ),
+     serve: 'bool' = False,
+     trainer: 't.Optional[Trainer]' = None,
+     example: 'dc.InitVar[t.Any | None]' = None,
+     postprocess: Optional[Callable] = None,
+     timeout: Optional[int] = None,
+     headers: Optional[Dict] = None,
+     raises: bool = True) -> None
+```
+| Parameter | Description |
+|-----------|-------------|
+| identifier | Identifier of the leaf. |
+| db | Datalayer instance. |
+| uuid | UUID of the leaf. |
+| artifacts | A dictionary of artifacts paths and `DataType` objects |
+| upstream | A list of upstream components |
+| plugins | A list of plugins to be used in the component. |
+| cache | (Optional) If set `true` the component will not be cached during primary job of the component i.e on a distributed cluster this component will be reloaded on every component task e.g model prediction. |
+| status | What part of the lifecycle the component is in. |
+| signature | signature of the model |
+| datatype | DataType instance. |
+| output_schema | Output schema (mapping of encoders). |
+| model_update_kwargs | The kwargs to use for model update. |
+| predict_kwargs | Additional arguments to use at prediction time. |
+| compute_kwargs | Kwargs used for compute backend job submit. Example (Ray backend): compute_kwargs = dict(resources=...). |
+| validation | The validation ``Dataset`` instances to use. |
+| metric_values | The metrics to evaluate on. |
+| num_workers | number of multiprocessing workers |
+| serve | Creates an http endpoint and serve the model with ``compute_kwargs`` on a distributed cluster. |
+| trainer | `Trainer` instance to use for training. |
+| example | An example to auto-determine the schema/ datatype. |
+| postprocess | postprocess function to apply to the results |
+| timeout | set seconds until request times out |
+| headers | dictionary of request headers passed to``requests`` package |
+| raises | raises error ``True``/``False`` |
+
+Download files from a list of URIs.
 
 ## `Downloader` 
 

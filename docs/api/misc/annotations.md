@@ -2,20 +2,6 @@
 
 [Source code](https://github.com/superduper/superduper/blob/main/superduper/misc/annotations.py)
 
-## `merge_docstrings` 
-
-```python
-merge_docstrings(cls)
-```
-| Parameter | Description |
-|-----------|-------------|
-| cls | Class to merge docstrings for. |
-
-Decorator that merges Sphinx-styled class docstrings.
-
-Decorator merges doc-strings from parent to child classes,
-ensuring no duplicate parameters and correct indentation.
-
 ## `deprecated` 
 
 ```python
@@ -40,6 +26,55 @@ component(*schema: Dict)
 
 Decorator for creating a component.
 
+## `build_importable` 
+
+```python
+build_importable(*,
+     db=None,
+     importable=None)
+```
+| Parameter | Description |
+|-----------|-------------|
+| db | ``Datalayer`` instance |
+| importable | importable path |
+
+Build an importable from a path.
+
+## `extract_parameters` 
+
+```python
+extract_parameters(doc)
+```
+| Parameter | Description |
+|-----------|-------------|
+| doc | Sphinx-styled docstring. Docstring may have multiple lines |
+
+Extracts and organizes parameter descriptions from a Sphinx-styled docstring.
+
+## `importable` 
+
+```python
+importable(f)
+```
+| Parameter | Description |
+|-----------|-------------|
+| f | function to make importable, decorated with @importable |
+
+Make a function serializable as an importable.
+
+## `replace_parameters` 
+
+```python
+replace_parameters(doc,
+     placeholder: str = '!!!')
+```
+| Parameter | Description |
+|-----------|-------------|
+| doc | Sphinx-styled docstring. |
+| placeholder | Placeholder to replace parameters with. |
+
+Replace parameters in a doc-string with a placeholder.
+
 ## `requires_packages` 
 
 ```python
@@ -55,34 +90,21 @@ Require the packages to be installed.
 
 E.g. ('sklearn', '0.1.0', '0.2.0', 'scikit-learn')
 
-## `extract_parameters` 
+## `warn_plugin_deprecated` 
 
 ```python
-extract_parameters(doc)
+warn_plugin_deprecated(name)
 ```
 | Parameter | Description |
 |-----------|-------------|
-| doc | Sphinx-styled docstring. Docstring may have multiple lines |
+| name | name of the plugin |
 
-Extracts and organizes parameter descriptions from a Sphinx-styled docstring.
+Warn that a plugin is deprecated.
 
-## `replace_parameters` 
-
-```python
-replace_parameters(doc,
-     placeholder: str = '!!!')
-```
-| Parameter | Description |
-|-----------|-------------|
-| doc | Sphinx-styled docstring. |
-| placeholder | Placeholder to replace parameters with. |
-
-Replace parameters in a doc-string with a placeholder.
-
-## `superduperDeprecationWarning` 
+## `SuperDuperDeprecationWarning` 
 
 ```python
-superduperDeprecationWarning(self,
+SuperDuperDeprecationWarning(self,
      /,
      *args,
      **kwargs)

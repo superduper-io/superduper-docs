@@ -1,32 +1,6 @@
 **`superduper.components.datatype`** 
 
-[Source code](https://github.com/superduper/superduper/blob/main/superduper.components/datatype.py)
-
-## `pickle_decode` 
-
-```python
-pickle_decode(b: bytes,
-     info: Optional[Dict] = None) -> Any
-```
-| Parameter | Description |
-|-----------|-------------|
-| b | The bytes to decode. |
-| info | Optional information. |
-
-Decodes bytes using pickle.
-
-## `pickle_encode` 
-
-```python
-pickle_encode(object: Any,
-     info: Optional[Dict] = None) -> bytes
-```
-| Parameter | Description |
-|-----------|-------------|
-| object | The object to encode. |
-| info | Optional information. |
-
-Encodes an object using pickle.
+[Source code](https://github.com/superduper/superduper/blob/main/superduper/components/datatype.py)
 
 ## `base64_to_bytes` 
 
@@ -107,7 +81,7 @@ Checks if a file path exists.
 ```python
 get_serializer(identifier: str,
      method: str,
-     encodable: str,
+     encodable: str = 'encodable',
      db: Optional[ForwardRef('Datalayer')] = None)
 ```
 | Parameter | Description |
@@ -145,6 +119,32 @@ json_encode(object: Any,
 
 Encode the dict to a JSON string.
 
+## `pickle_decode` 
+
+```python
+pickle_decode(b: bytes,
+     info: Optional[Dict] = None) -> Any
+```
+| Parameter | Description |
+|-----------|-------------|
+| b | The bytes to decode. |
+| info | Optional information. |
+
+Decodes bytes using pickle.
+
+## `pickle_encode` 
+
+```python
+pickle_encode(object: Any,
+     info: Optional[Dict] = None) -> bytes
+```
+| Parameter | Description |
+|-----------|-------------|
+| object | The object to encode. |
+| info | Optional information. |
+
+Encodes an object using pickle.
+
 ## `torch_decode` 
 
 ```python
@@ -171,22 +171,26 @@ torch_encode(object: Any,
 
 Saves an object in torch format.
 
-## `Encoder` 
+## `DataType` 
 
 ```python
-Encoder(self,
+DataType(self,
      identifier: str,
      db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
-     uuid: str = None,
+     uuid: None = <factory>,
      *,
+     upstream: "t.Optional[t.List['Component']]" = None,
+     plugins: "t.Optional[t.List['Plugin']]" = None,
      artifacts: 'dc.InitVar[t.Optional[t.Dict]]' = None,
+     cache: bool = True,
+     status: 't.Optional[Status]' = None,
      encoder: Optional[Callable] = None,
      decoder: Optional[Callable] = None,
      info: Optional[Dict] = None,
      shape: Optional[Sequence] = None,
      directory: Optional[str] = None,
      encodable: str = 'encodable',
-     bytes_encoding: Optional[str] = <BytesEncoding.BYTES: 'Bytes'>,
+     bytes_encoding: Optional[str] = <BytesEncoding.BYTES: 'bytes'>,
      intermediate_type: Optional[str] = 'bytes',
      media_type: Optional[str] = None) -> None
 ```
@@ -196,6 +200,10 @@ Encoder(self,
 | db | Datalayer instance. |
 | uuid | UUID of the leaf. |
 | artifacts | A dictionary of artifacts paths and `DataType` objects |
+| upstream | A list of upstream components |
+| plugins | A list of plugins to be used in the component. |
+| cache | (Optional) If set `true` the component will not be cached during primary job of the component i.e on a distributed cluster this component will be reloaded on every component task e.g model prediction. |
+| status | What part of the lifecycle the component is in. |
 | encoder | A callable that converts an encodable object of this encoder to bytes. |
 | decoder | A callable that converts bytes to an encodable object of this encoder. |
 | info | An optional information dictionary. |
@@ -213,27 +221,48 @@ A data type component that defines how data is encoded and decoded.
 ```python
 Artifact(self,
      db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
-     uuid: str = None,
-     x: Any = <EMPTY>,
+     uuid: None = <factory>,
      *,
      identifier: str = '',
-     file_id: Optional[str] = None,
      datatype: superduper.components.datatype.DataType,
      uri: Optional[str] = None,
-     sha1: Optional[str] = None) -> None
+     x: Any = <EMPTY>,
+     blob: dataclasses.InitVar[typing.Union[str,
+     bytes,
+     NoneType]] = None) -> None
 ```
 | Parameter | Description |
 |-----------|-------------|
 | identifier | Identifier of the leaf. |
 | db | Datalayer instance. |
 | uuid | UUID of the leaf. |
-| file_id | unique-id of the content |
 | datatype | The datatype of the content. |
 | uri | URI of the content, if any. |
-| sha1 | SHA1 hash of the content. |
 | x | The artifact object. |
+| blob | The blob data. Can be a string or bytes. if string, it should be in the format `&:blob:{file_id}` if bytes, it should be the actual data. |
 
 Class for representing data to be saved on disk or in the artifact-store.
+
+## `Blob` 
+
+```python
+Blob(self,
+     db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
+     uuid: None = <factory>,
+     *,
+     identifier: str,
+     bytes: bytes) -> None
+```
+| Parameter | Description |
+|-----------|-------------|
+| identifier | The identifier of the blob. |
+| db | Datalayer instance. |
+| uuid | UUID of the leaf. |
+| bytes | The bytes of the blob. |
+
+A wrapper to signify a blob for special treatment.
+
+See `Document.encode` and related functions.
 
 ## `DecodeTorchStateDict` 
 
@@ -252,25 +281,21 @@ Torch state dictionary decoder.
 ```python
 Encodable(self,
      db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
-     uuid: str = None,
-     x: Any = <EMPTY>,
-     blob: dataclasses.InitVar[typing.Optional[bytearray]] = None,
+     uuid: None = <factory>,
      *,
      identifier: str = '',
-     file_id: Optional[str] = None,
      datatype: superduper.components.datatype.DataType,
      uri: Optional[str] = None,
-     sha1: Optional[str] = None) -> None
+     x: Any = <EMPTY>,
+     blob: dataclasses.InitVar[typing.Optional[bytearray]] = None) -> None
 ```
 | Parameter | Description |
 |-----------|-------------|
 | identifier | Identifier of the leaf. |
 | db | Datalayer instance. |
 | uuid | UUID of the leaf. |
-| file_id | unique-id of the content |
 | datatype | The datatype of the content. |
 | uri | URI of the content, if any. |
-| sha1 | SHA1 hash of the content. |
 | x | The encodable object. |
 | blob | The blob data. |
 
@@ -281,54 +306,67 @@ Class for encoding non-Python datatypes to the database.
 ```python
 File(self,
      db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
-     uuid: str = None,
-     x: Any = <EMPTY>,
-     file_name: Optional[str] = None,
+     uuid: None = <factory>,
      *,
      identifier: str = '',
-     file_id: Optional[str] = None,
      datatype: superduper.components.datatype.DataType,
      uri: Optional[str] = None,
-     sha1: Optional[str] = None) -> None
+     x: Any = <EMPTY>) -> None
 ```
 | Parameter | Description |
 |-----------|-------------|
 | identifier | Identifier of the leaf. |
 | db | Datalayer instance. |
 | uuid | UUID of the leaf. |
-| file_id | unique-id of the content |
 | datatype | The datatype of the content. |
 | uri | URI of the content, if any. |
-| sha1 | SHA1 hash of the content. |
 | x | path to the file |
-| file_name | File name |
 
 Data to be saved on disk and passed as a file reference.
+
+## `FileItem` 
+
+```python
+FileItem(self,
+     db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
+     uuid: None = <factory>,
+     *,
+     identifier: str,
+     path: str) -> None
+```
+| Parameter | Description |
+|-----------|-------------|
+| identifier | The identifier of the file. |
+| db | Datalayer instance. |
+| uuid | UUID of the leaf. |
+| path | The path of the file. |
+
+File item class.
 
 ## `LazyArtifact` 
 
 ```python
 LazyArtifact(self,
      db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
-     uuid: str = None,
-     x: Any = <EMPTY>,
+     uuid: None = <factory>,
      *,
      identifier: str = '',
-     file_id: Optional[str] = None,
      datatype: superduper.components.datatype.DataType,
      uri: Optional[str] = None,
-     sha1: Optional[str] = None) -> None
+     x: Any = <EMPTY>,
+     blob: dataclasses.InitVar[typing.Union[str,
+     bytes,
+     NoneType]] = None) -> None
 ```
 | Parameter | Description |
 |-----------|-------------|
 | identifier | Identifier of the leaf. |
 | db | Datalayer instance. |
 | uuid | UUID of the leaf. |
-| file_id | unique-id of the content |
 | datatype | The datatype of the content. |
 | uri | URI of the content, if any. |
-| sha1 | SHA1 hash of the content. |
 | x | The artifact object. |
+| blob | The blob data. Can be a string or bytes. if string, it should be in the format `&:blob:{file_id}` if bytes, it should be the actual data. |
 
 Data to be saved and loaded only when needed.
 
@@ -337,27 +375,21 @@ Data to be saved and loaded only when needed.
 ```python
 LazyFile(self,
      db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
-     uuid: str = None,
-     x: Any = <EMPTY>,
-     file_name: Optional[str] = None,
+     uuid: None = <factory>,
      *,
      identifier: str = '',
-     file_id: Optional[str] = None,
      datatype: superduper.components.datatype.DataType,
      uri: Optional[str] = None,
-     sha1: Optional[str] = None) -> None
+     x: Any = <EMPTY>) -> None
 ```
 | Parameter | Description |
 |-----------|-------------|
 | identifier | Identifier of the leaf. |
 | db | Datalayer instance. |
 | uuid | UUID of the leaf. |
-| file_id | unique-id of the content |
 | datatype | The datatype of the content. |
 | uri | URI of the content, if any. |
-| sha1 | SHA1 hash of the content. |
 | x | path to the file |
-| file_name | File name |
 
 Class is used to load a file only when needed.
 
@@ -366,24 +398,20 @@ Class is used to load a file only when needed.
 ```python
 Native(self,
      db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
-     uuid: str = None,
-     x: Optional[Any] = None,
+     uuid: None = <factory>,
      *,
      identifier: str = '',
-     file_id: Optional[str] = None,
      datatype: superduper.components.datatype.DataType,
      uri: Optional[str] = None,
-     sha1: Optional[str] = None) -> None
+     x: Optional[Any] = None) -> None
 ```
 | Parameter | Description |
 |-----------|-------------|
 | identifier | Identifier of the leaf. |
 | db | Datalayer instance. |
 | uuid | UUID of the leaf. |
-| file_id | unique-id of the content |
 | datatype | The datatype of the content. |
 | uri | URI of the content, if any. |
-| sha1 | SHA1 hash of the content. |
 | x | The encodable object. |
 
 Class for representing native data supported by the underlying database.

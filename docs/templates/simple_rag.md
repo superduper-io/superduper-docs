@@ -11,9 +11,10 @@ Otherwise refer to "Configuring your production system".
 
 ```python
 APPLY = True
-COLLECTION_NAME = '<var:table_name>' if not APPLY else '_sample_rag'
+SAMPLE_COLLECTION_NAME = 'sample_simple_rag'
+COLLECTION_NAME = '<var:table_name>' if not APPLY else 'docs'
 ID_FIELD = '<var:id_field>' if not APPLY else 'id'
-OUTPUT_PREFIX = 'outputs__'
+OUTPUT_PREFIX = '_outputs__'
 ```
 
 
@@ -24,21 +25,28 @@ CFG.output_prefix = OUTPUT_PREFIX
 CFG.bytes_encoding = 'str'
 CFG.native_json = False
 
-db = superduper()
-```
-
-
-```python
-db.drop(force=True, data=True)
+db = superduper('mongomock://')
 ```
 
 
 ```python
 import json
+import requests
+import io
+from superduper import logging
 
-with open('data.json', 'r') as f:
-    data = json.load(f)
-data = [{'x': r} for r in data]
+def getter():
+    logging.info('Downloading data...')
+    response = requests.get('https://superduperdb-public-demo.s3.amazonaws.com/text.json')
+    logging.info('Downloading data... (Done)')
+    data = json.loads(response.content.decode('utf-8'))
+    return [{'x': r} for r in data]
+```
+
+
+```python
+if APPLY:
+    data = getter()
 ```
 
 <!-- TABS -->
@@ -156,7 +164,7 @@ if APPLY:
 ```python
 from superduper_openai import OpenAIChatCompletion
 
-llm_openai = OpenAIChatCompletion(identifier='llm-openai', model='gpt-3.5-turbo')
+llm_openai = OpenAIChatCompletion(identifier='llm-openai-2', model='gpt-4-turbo')
 ```
 
 ## Answer question with LLM
@@ -168,12 +176,14 @@ from superduper.components.model import RAGModel
 
 prompt_template = (
     "Use the following context snippets, these snippets are not ordered!, Answer the question based on this context.\n"
+    "These snippets are samples from our internal data-repositories, and should be used exclusively and as a matter"
+    " of priority to answer the question\n\n"
     "{context}\n\n"
     "Here's the question: {query}"
 )
 
 rag = RAGModel(
-    'rag-model',
+    'simple_rag',
     select=db[upstream_listener.outputs].select().like({upstream_listener.outputs: '<var:query>'}, vector_index=vector_index_name, n=5),
     prompt_template=prompt_template,
     key=upstream_listener.outputs,
@@ -190,7 +200,7 @@ if APPLY:
 
 ```python
 if APPLY:
-    print(rag.predict('Tell me about vector-search'))
+    print(rag.predict('Tell me about the project'))
 ```
 
 By applying the RAG model to the database, it will subsequently be accessible for use in other services.
@@ -200,7 +210,7 @@ By applying the RAG model to the database, it will subsequently be accessible fo
 from superduper import Application
 
 app = Application(
-    'rag-app',
+    'simple-rag-app',
     components=[
         upstream_listener,
         vector_index,
@@ -221,14 +231,22 @@ You can now load the model elsewhere and make predictions using the following co
 
 
 ```python
-from superduper import Template
+from superduper import Template, Table, Schema
+from superduper.components.dataset import RemoteData
 
 template = Template(
-    'rag-simple',
+    'simple_rag',
     template=app,
-    data=data,
-    substitutions={'docs': 'table_name', OUTPUT_PREFIX: 'output_prefix'},
-    template_variables=['table_name', 'id_field'],
+    substitutions={COLLECTION_NAME: 'table_name', OUTPUT_PREFIX: 'output_prefix', 'mongodb': 'databackend'},
+    template_variables=['table_name', 'id_field', 'output_prefix', 'databackend'],
+    default_table=Table(
+        'sample_simple_rag',
+        schema=Schema('sample_simple_rag/schema', fields={'x': 'str'}),
+        data=RemoteData(
+            'superduper-docs',
+            getter=getter,
+        )
+    ),
     types={
         'id_field': {
             'type': 'str',
@@ -246,11 +264,11 @@ template = Template(
         },
         'table_name': {
             'type': 'str',
-            'default': '_sample_rag'
+            'default': SAMPLE_COLLECTION_NAME,
         },
-        'output_prefix': {
+        'databackend': {
             'type': 'str',
-            'default': OUTPUT_PREFIX,
+            'default': 'mongodb',
         }
     }
 )

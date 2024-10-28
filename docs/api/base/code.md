@@ -7,7 +7,7 @@
 ```python
 Code(self,
      db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
-     uuid: str = None,
+     uuid: None = <factory>,
      *,
      identifier: str = '',
      code: str) -> None

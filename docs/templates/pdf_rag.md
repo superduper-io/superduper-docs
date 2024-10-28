@@ -4,18 +4,40 @@ This is a PDF-based RAG application. While answering questions, it accesses rele
 
 
 ```python
-from superduper import superduper
+APPLY = False
+COLLECTION_NAME = '<var:table_name>' if not APPLY else 'sample_pdf_rag'
 ```
 
 
 ```python
-db = superduper("mongodb://localhost:27017/pdf_rag")
-db.drop(True, True)
+from superduper import superduper, CFG
+CFG.bytes_encoding = 'str'
+CFG.native_json = False
 ```
 
 
 ```python
-!curl -O https://superduperdb-public-demo.s3.amazonaws.com/pdfs.zip && unzip -o pdfs.zip
+db = superduper("mongomock://")
+```
+
+
+```python
+def getter():
+    import subprocess
+    subprocess.run(['curl', '-O', 'https://superduperdb-public-demo.s3.amazonaws.com/pdfs.zip'])
+    subprocess.run(['unzip', '-o', 'pdfs.zip'])
+    subprocess.run(['rm', 'pdfs.zip'])
+    pdf_folder = "pdfs"
+    pdf_names = [pdf for pdf in os.listdir(pdf_folder) if pdf.endswith(".pdf")]
+    pdf_paths = [os.path.join(pdf_folder, pdf) for pdf in pdf_names]
+    data = [{"url": pdf_path, "file": pdf_path} for pdf_path in pdf_paths]
+    return data
+```
+
+
+```python
+if APPLY:
+    data = getter()
 ```
 
 ## Create a table to store PDFs.
@@ -26,28 +48,25 @@ import os
 from superduper import Schema, Table
 from superduper.components.datatype import file_lazy
 
+schema = Schema(identifier="myschema", fields={'url': 'str', 'file': file_lazy})
+table = Table(identifier=COLLECTION_NAME, schema=schema)
 
-
-schema = Schema(identifier="myschema", fields={"url": "str", "file": file_lazy})
-table = Table(identifier="pdfs", schema=schema)
-db.apply(table, force=True)
-
-pdf_folder = "pdfs"
-pdf_names = [pdf for pdf in os.listdir(pdf_folder) if pdf.endswith(".pdf")]
-pdf_paths = [os.path.join(pdf_folder, pdf) for pdf in pdf_names]
-
-data = [{"url": pdf_path, "file": pdf_path} for pdf_path in pdf_paths]
-
-db["pdfs"].insert(data).execute()
+if APPLY:
+    db.apply(table, force=True)
+    db[COLLECTION_NAME].insert(data).execute()
 ```
 
 ## Split the PDF file into images for later result display
 
 
 ```python
+from superduper import ObjectModel, logging
+from pdf2image import convert_from_path
+import os
+
+
 def split_image(pdf_path):
     logging.info(f"Splitting images from {pdf_path}")
-    from pdf2image import convert_from_path
 
     image_folders = "data/pdf-images"
     pdf_name = os.path.basename(pdf_path)
@@ -65,7 +84,6 @@ def split_image(pdf_path):
         data.append(path)
     return data
 
-from superduper import ObjectModel
 
 model_split_image = ObjectModel(
     identifier="split_image",
@@ -75,10 +93,12 @@ model_split_image = ObjectModel(
 
 listener_split_image = model_split_image.to_listener(
     key="file",
-    select=db["pdfs"].find(),
+    select=db[COLLECTION_NAME].find(),
     flatten=True,
 )
-db.apply(listener_split_image, force=True)
+
+if APPLY:
+    db.apply(listener_split_image, force=True)
 ```
 
 ## Build a chunks model and return chunk results with coordinate information.
@@ -192,40 +212,79 @@ def get_chunks(pdf):
         [],
     )
     return all_chunks_and_links
-
 ```
 
 
 ```python
+from superduper.components.schema import FieldType
+
 model_chunk = ObjectModel(
     identifier="chunk",
     object=get_chunks,
+    datatype=FieldType(identifier="json")
 )
 
 listener_chunk = model_chunk.to_listener(
     key="file",
-    select=db["pdfs"].select(),
+    select=db[COLLECTION_NAME].select(),
     flatten=True,
 )
-db.apply(listener_chunk, force=True)
+
+if APPLY:
+    db.apply(listener_chunk, force=True)
 ```
 
 ## Build a vector index for vector search
+
+OpenAI:
+
+
+```python
+import os
+from superduper.components.vector_index import sqlvector
+
+from superduper_openai import OpenAIEmbedding
+
+openai_embedding = OpenAIEmbedding(identifier='text-embedding-ada-002' , datatype=sqlvector(shape=(1536,)))
+```
+
+Sentence-transformers:
+
+
+```python
+import sentence_transformers
+from superduper_sentence_transformers import SentenceTransformer
+
+sentence_transformers_embedding = SentenceTransformer(
+    identifier="sentence-transformers-embedding",
+    model="BAAI/bge-small-en",
+    datatype=sqlvector(shape=(1024,)),
+    postprocess=lambda x: x.tolist(),
+    predict_kwargs={"show_progress_bar": True},
+)
+```
+
+
+```python
+from superduper.components.model import ModelRouter
+from superduper.components.vector_index import sqlvector
+
+model_embedding = ModelRouter(
+    'embedding',
+    models={'openai': openai_embedding, 'sentence_transformers': sentence_transformers_embedding},
+    model='<var:embedding_model>' if not APPLY else 'openai',
+    example='this is a test',
+)
+```
 
 
 ```python
 from superduper_openai.model import OpenAIEmbedding
 from superduper import VectorIndex
 
-
-model_embedding = OpenAIEmbedding(
-    identifier="embedding",
-    model="text-embedding-ada-002",
-)
-
 listener_embedding = model_embedding.to_listener(
-    key="_outputs__chunk.txt",
-    select=db["_outputs__chunk"].select(),
+    key=f"{listener_chunk.outputs}.txt",
+    select=db[listener_chunk.outputs].select(),
 )
 
 vector_index = VectorIndex(
@@ -233,7 +292,8 @@ vector_index = VectorIndex(
     indexing_listener=listener_embedding,
 )
 
-db.apply(vector_index, force=True)
+if APPLY:
+    db.apply(vector_index, force=True)
 
 ```
 
@@ -246,13 +306,15 @@ The processor will integrate the returned chunks information with the images, an
 
 ```python
 from superduper import Plugin
-from utils import Processer
-processor = Processer(identifier="processor", db=db, plugins=[Plugin(path="./utils.py")])
-```
+from utils import Processor
 
-
-```python
-
+processor = Processor(
+    identifier="processor",
+    db=db,
+    chunk_key=listener_chunk.outputs,
+    split_image_key=listener_split_image.outputs,
+    plugins=[Plugin(path="./utils.py")],
+)
 ```
 
 ## Create a RAG model
@@ -265,8 +327,8 @@ from superduper import Model, logging
 
 
 class Rag(Model):
-
     llm_model: Model
+    vector_index_name: str
     prompt_template: str
     processor: None | Model = None
 
@@ -274,10 +336,17 @@ class Rag(Model):
         assert "{context}" in self.prompt_template, 'The prompt_template must include "{context}"'
         assert "{query}" in self.prompt_template, 'The prompt_template must include "{query}"'
         super().__post_init__(*args, **kwargs)
+
+    def init(self, db=None):
+        db = db or self.db
+        self.vector_index = self.db.load("vector_index", self.vector_index_name)
+        super().init(db=db)
+        
     
     def predict(self, query, top_k=5, format_result=False):
         vector_search_out = self.vector_search(query, top_k=top_k)
-        context = "\n\n---\n\n".join([x["_outputs__chunk.txt"] for x in vector_search_out])
+        key = self.vector_index.indexing_listener.key
+        context = "\n\n---\n\n".join([x[key] for x in vector_search_out])
         
         prompt = self.prompt_template.format(context=context, query=query)
         output = self.llm_model.predict(prompt)
@@ -286,14 +355,17 @@ class Rag(Model):
             "docs": vector_search_out,
         }
         if format_result and self.processor:
-            result["images"] = list(self.processor.predict(vector_search_out, match_text=output, merge=True))
+            result["images"] = list(self.processor.predict(
+                vector_search_out,
+                match_text=output,
+            ))
         return result
 
     def vector_search(self, query, top_k=5, format_result=False):
         logging.info(f"Vector search query: {query}")
-        select = self.db["_outputs__chunk"].like(
-            {"_outputs__chunk.txt":query},
-            vector_index="vector-index", 
+        select = self.db[self.vector_index.indexing_listener.select.table].like(
+            {self.vector_index.indexing_listener.key:query},
+            vector_index=self.vector_index.identifier, 
             n=top_k,
         ).select()
         out = select.execute()
@@ -304,12 +376,63 @@ class Rag(Model):
 
 
 ```python
+from superduper_openai import OpenAIChatCompletion
+
+llm_openai = OpenAIChatCompletion(identifier='llm-openai', model='gpt-3.5-turbo')
+```
+
+
+```python
+from superduper_anthropic import AnthropicCompletions
+
+predict_kwargs = {
+    "max_tokens": 1024,
+    "temperature": 0.8,
+}
+
+llm_anthropic = AnthropicCompletions(identifier='llm-anthropic', model='claude-2.1', predict_kwargs=predict_kwargs)
+```
+
+
+```python
+from superduper_vllm import VllmCompletion
+
+predict_kwargs = {
+    "max_tokens": 1024,
+    "temperature": 0.8,
+}
+
+llm_vllm = VllmCompletion(
+    identifier="llm-vllm",
+    vllm_params={
+        'model': 'TheBloke/Mistral-7B-Instruct-v0.2-AWQ',
+        "gpu_memory_utilization": 0.7,
+        "max_model_len": 1024,
+        "quantization": "awq",
+    },
+    predict_kwargs=predict_kwargs,
+)
+```
+
+
+```python
+llm = ModelRouter(
+    'llm',
+    models={
+        'openai': llm_openai,
+        'anthropic': llm_anthropic,
+        'vllm': llm_vllm,
+    },
+    model='<var:llm_model>' if not APPLY else 'openai',
+)
+```
+
+
+```python
 from superduper_openai.model import OpenAIChatCompletion
 
-llm = OpenAIChatCompletion(identifier="llm", model="gpt-3.5-turbo")
-
 prompt_template = (
-    "The following is a document and question about the volvo user manual\n"
+    "The following is a document and question\n"
     "Only provide a very concise answer\n"
     "Context:\n\n"
     "{context}\n\n"
@@ -317,53 +440,84 @@ prompt_template = (
     "answer:"
 )
 
-rag = Rag(identifier="rag", llm_model=llm, prompt_template=prompt_template, db=db, processor=processor)
-db.apply(rag, force=True)
-```
-
-
-```python
-result = rag.predict("How to perform Query Optimization?", format_result=True)
+rag = Rag(identifier="rag", llm_model=llm, vector_index_name=vector_index.identifier, prompt_template=prompt_template, db=db, processor=processor)
 ```
 
 
 ```python
 from IPython.display import Image, Markdown, display
 
-display(Markdown(result["answer"]))
-
-for message, img in result["images"]:
-    display(Markdown(message))
-    display(img)
+if APPLY:
+    db.apply(rag, force=True)
+    result = rag.predict("How to perform Query Optimization?", format_result=True)
+    
+    display(Markdown(result["answer"]))
+    
+    for message, img in result["images"]:
+        display(Markdown(message))
+        display(img)
 ```
 
 ## Create template
 
 
 ```python
-from superduper import Application, Template
+from superduper import Application
 
-app = Application.build_from_db(db=db, identifier="pdf-rag")
+app = Application(
+    'pdf-rag',
+    components=[
+        table,
+        listener_split_image,
+        listener_chunk,
+        vector_index,
+        rag
+    ]
+)
 ```
 
 
 ```python
-from superduper import Template
+from superduper import Template, CFG, Table
+from superduper.components.dataset import RemoteData
 
-template = Template('pdf-rag', template=app, substitutions={prompt_template: 'prompt_template'})
-```
-
-
-```python
-template.template_variables
+template = Template(
+    'pdf-rag',
+    template=app,
+    substitutions={prompt_template: 'prompt_template', COLLECTION_NAME: 'table_name'},
+    template_variables=['table_name', 'prompt_template', 'llm_model', 'embedding_model'],
+    default_table=Table(
+        'sample_pdf_rag',
+        schema=Schema(
+            'sample_pdf_rag/schema',
+            fields={"url": "str", "file": file_lazy}
+        ),
+        data=RemoteData('sample_pdfs', getter=getter),
+    ),
+    types={
+        'prompt_template':{
+            'type': 'str',
+            'default': prompt_template
+        },
+        'table_name': {
+            'type': 'str',
+            'default': 'sample_pdf_rag'
+        },
+        'llm_model': {
+            'type': 'str',
+            'choices': ['openai', 'anthropic', 'vllm'],
+            'default': 'openai',
+        },
+        'embedding_model': {
+            'type': 'str',
+            'choices': ['openai', 'sentence_transformers'],
+            'default': 'openai',
+        },
+    }
+)
 ```
 
 
 ```python
 template.export(".")
-```
-
-
-```python
-
 ```

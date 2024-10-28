@@ -12,6 +12,7 @@ SelectResult(self,
      scores: Optional[Dict[str,
      float]] = None,
      schema: Optional[ForwardRef('Schema')] = None,
+     process_func: Optional[Callable] = None,
      _it: int = 0) -> None
 ```
 | Parameter | Description |
@@ -22,6 +23,7 @@ SelectResult(self,
 | scores | a dict of scores to add to the documents |
 | schema | the schema to use to decode the documents |
 | _it | an iterator to keep track of the current position in the cursor, Default is 0. |
+| process_func | a function to process the raw cursor output before |
 
 A wrapper around a raw cursor that adds some extra functionality.
 
