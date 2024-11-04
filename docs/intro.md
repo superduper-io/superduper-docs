@@ -12,6 +12,12 @@ Superduper is a Python based framework for building **end-2-end AI-data workflow
 
 Developers may leverage Superduper by building **compositional and declarative objects** which out-source the details of deployment, orchestration and versioning to Superduper. This allows developers to completely avoid implementing MLOps, ETL pipelines, model deployment, data migration and synchronization.
 
+Concretely, developers may:
+
+- Create AI-applications using a persisted data state, corresponding to computations involving AI models and APIs.
+- Build multi-step computations, triggers and actions
+- Parametrize these AI-applications as reusable units of portable functionality, known as "templates"
+
 Superduper involves 4 characteristic phases, summarized as "**CAPE**": **connect** to data, **apply** arbitrary AI to that data, **package** and reuse the application on arbitrary data, and **execute** AI-database queries and predictions on the resulting AI outputs and data.
 
 - **Connect**
@@ -153,31 +159,6 @@ of its philosophy and community ethos.
 
 ![](/img/loop_new.f45d4893.svg)
 
-### What does apply AI to data mean?
-
-"Applying AI" to data can mean numerous things, which developers 
-are able to determine themselves. Any of these things is possible:
-
-- Compute outputs on incoming data
-- Train a model on database data
-- Configure vector-search on database
-- Measure the performance of models
-- Configure models to work together
-
-Superduper includes a compact developer contract making it very easy to develop "components" which define how 
-to apply the component to the data in the connected database.
-
-### Why is the "DB" so important in AI?
-
-Superduper uses the fact that AI development always starts with data, ends with data, and interfaces 
-with data from conception, to productionized deployment. Any environment which has a chance of uniting 
-the diverse tools and stakeholders involved in AI development, needs a single way 
-for AI models and algorithms to be connected to data. ***That way is Superduper***.
-
-:::important
-By integrating AI directly at data's source, Superduper enables developers to avoid implementing MLops.
-:::
-
 ### What integrations does Superduper include?
 
 #### Data
@@ -201,24 +182,3 @@ By integrating AI directly at data's source, Superduper enables developers to av
 - Sklearn
 - Transformers
 - Sentence-Transformers
-
-### What important additional aspects does Superduper include?
-
-Developers may:
-
-- Choose whether to deploy Superduper in single blocking process or in scalable, non-blocking mode via `ray`
-- Choose whether to use their own self-programmed home grown models, or integrate AI APIs and open-source frameworks
-- Choose which type of data they use, including images, videos, audio, or custom datatypes
-- Automatically version and track all functionality they use
-- Keep control over which data is exposed to API services (if any) by leveraging model self-hosting
-
-### Key Features:
-
-- **[Integration of AI with your existing data infrastructure](https://docs.superduper.io/docs/docs/walkthrough/apply_models):** Integrate any AI models and APIs with your databases in a single scalable deployment without the need for additional pre-processing steps, ETL, or boilerplate code.
-- **[Streaming Inference](https://docs.superduper.io/docs/docs/walkthrough/daemonizing_models_with_listeners):** Have your models compute outputs automatically and immediately as new data arrives, keeping your deployment always up-to-date.
-- **[Scalable Model Training](https://docs.superduper.io/docs/docs/walkthrough/training_models):** Train AI models on large, diverse datasets simply by querying your training data. Ensured optimal performance via in-build computational optimizations.
-- **[Model Chaining](https://docs.superduper.io/docs/docs/walkthrough/linking_interdependent_models/)**: Easily set up complex workflows by connecting models and APIs to work together in an interdependent and sequential manner.
-- **[Simple, but Extendable Interface](https://docs.superduper.io/docs/docs/fundamentals/procedural_vs_declarative_api)**: Add and leverage any function, program, script, or algorithm from the Python ecosystem to enhance your workflows and applications. Drill down to any layer of implementation, including the inner workings of your models, while operating Superduper with simple Python commands.
-- **[Difficult Data Types](https://docs.superduper.io/docs/docs/walkthrough/encoding_special_data_types/)**: Work directly in your database with images, video, audio, and any type that can be encoded as `bytes` in Python.
-- **[Feature Storing](https://docs.superduper.io/docs/docs/walkthrough/encoding_special_data_types):** Turn your database into a centralized repository for storing and managing inputs and outputs of AI models of arbitrary data types, making them available in a structured format and known environment.
-- **[Vector Search](https://docs.superduper.io/docs/docs/walkthrough/vector_search):** No need to duplicate and migrate your data to additional specialized vector databases - turn your existing battle-tested database into a fully-fledged multi-modal vector-search database, including easy generation of vector embeddings and vector indexes of your data with preferred models and APIs.

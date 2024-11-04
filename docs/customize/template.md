@@ -26,6 +26,21 @@ my_template.export('.')
 
 ## Best practices
 
+### Use a notebook
+
+We have built all of our templates using Jupyter notebooks 
+as the "build tool". The reason this is useful, is because 
+developers can apply each of their components as they go, 
+and interactively debug their workflow using sample data.
+
+When finished, the sample data and chosen parameters can 
+then be directly shipped as defaults in the `Template` 
+or substituted with variables. In this way, 
+the developer only needs to make sure that the notebook 
+works, and Superduper will take care of everything else.
+
+Navigate to GitHub to check out the [example templates](https://github.com/superduper-io/superduper/tree/main/templates).
+
 ### Ship sample data with the template
 
 In order to ship sample data with your template, you may provide data in 
