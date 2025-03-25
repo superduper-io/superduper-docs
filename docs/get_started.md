@@ -35,53 +35,42 @@ Note that Superduper allows developers to completely
 own their applications, self-hosting all models and data, if so wished. 
 To view which templates are available, type:
 
-```bash
-superduper ls
+```python
+from superduper import Template
+
+Template.download('simple_rag')
 ```
 
-To view a template do:
-
-```bash
-superduper inspect <template_name>
-```
-
-To install a template, do:
-
-```bash
-superduper bootstrap <template_name>
-```
-
-To try a simple RAG application either do:
-
-```bash
-export OPENAI_API_KEY=sk-...
-superduper bootstrap simple_rag
-superduper apply simple_rag --variables '{"table_name": "my-collection"}' --data_backend mongodb://localhost:27017/test_db
-```
-
-Or from python:
+Then in a terminal install the requirements and set your OpenAI key:
 
 ```python
-from superduper import superduper
-from superduper.templates import rag
-
-db = superduper('mongodb://localhost:27017/test_db')
-rag_app = rag(table_name='my-collection')
-db.apply(rag_app)
+pip install -r templates/simple_rag/requirements.txt
+export OPENAI_API_KEY=sk-...
 ```
 
-Once this command has successfully executed, view the results in the user interface:
+To use a template do the following:
 
-```bash
-superduper start
+```python
+from superduper import superduper, Template
+
+t = Template.read('templates/simple_rag')
+
+db.apply(t)
+
+app = t()
+
+db.apply(app)
 ```
 
-Navigate to the execute tab to test the results:
+Once this command has successfully executed, test the results.
+In this case, the template is the simplest form of an agent 
+deployed on your data, known as "retrievial-augmented-generation: RAG".
 
-![](/img/screenshot_execute.png)
+```python
+# This will depend highly on the template
+# View the available components with `db.show()`
 
-Or execute queries from the command line:
-
-```bash
-superduper execute
+db.load('RAGModel', 'simple_rag')
 ```
+
+You can see how the template was built by checking out the notebook in `templates/simple_rag/build.ipynb`.

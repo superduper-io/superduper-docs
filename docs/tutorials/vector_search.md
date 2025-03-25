@@ -38,16 +38,15 @@ a semi-exhaustive list of supported data-backends for connecting [here](../reusa
 
 
 ```python
-from superduper import superduper, Document
+from superduper import superduper
+from superduper.base import Base
 
 db = superduper('mongomock://test')
 
-_ = db['documents'].insert_many([Document({'txt': txt}) for txt in data]).execute()
-```
+class documents(Base):
+    txt: str
 
-
-```python
-db.show()
+db.insert([documents(txt=txt) for txt in data])
 ```
 
 We are going to make these data searchable by activating a [`Model`](../apply_api/model) instance 
@@ -58,35 +57,35 @@ and [here](../../api/ext/sentence_transformers/).
 
 
 ```python
-from superduper.ext.sentence_transformers import SentenceTransformer
+from superduper_sentence_transformers import SentenceTransformer
 
 model = SentenceTransformer(
     identifier="test",
     predict_kwargs={"show_progress_bar": True},
     model="all-MiniLM-L6-v2",
     device="cpu",
-    postprocess=lambda x: x.tolist(),
+    datatype='vector[float32:384]',
 )
 ```
 
 We can check that this model gives us what we want by evaluating an output 
 on a single data-point. (Learn more about the various aspects of `Model` [here](../models/).)
 
-
-```python
-model.predict(data[0])
-```
-
 Now that we've verified that this model works, we can "activate" it for 
 vector-search by creating a [`VectorIndex`](../apply_api/vector_index).
 
 
 ```python
-import pprint
-
-vector_index = model.to_vector_index(select=db['documents'].find(), key='txt')
-
-pprint.pprint(vector_index)
+from superduper import VectorIndex, Listener, Model
+vector_index = VectorIndex(
+    'test_index',
+    indexing_listener=Listener(
+        'test_listener',
+        model=model,
+        select=db['documents'],
+        key='txt',
+    )
+)
 ```
 
 You will see that the `VectorIndex` contains a [`Listener`](../apply_api/listener) instance.
@@ -112,17 +111,12 @@ You can verify this with:
 db.show()
 ```
 
-
-```python
-db['documents'].find_one().execute().unpack()
-```
-
 To "use" the `VectorIndex` we can execute a vector-search query:
 
 
 ```python
-query = db['documents'].like({'txt': 'Tell me about vector-search'}, vector_index=vector_index.identifier, n=3).find()
-cursor = query.execute()
+query = db['documents'].like({'txt': 'Tell me about vector-search'}, vector_index=vector_index.identifier, n=3).select()
+results = query.execute()
 ```
 
 This query will return a cursor of [`Document`](../fundamentals/document) instances.
@@ -130,7 +124,7 @@ To obtain the raw dictionaries, call the `.unpack()` command:
 
 
 ```python
-for r in cursor:
+for r in results:
     print('=' * 100)
     print(r.unpack()['txt'])
     print('=' * 100)

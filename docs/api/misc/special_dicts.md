@@ -1,19 +1,21 @@
 **`superduper.misc.special_dicts`** 
 
-[Source code](https://github.com/superduper/superduper/blob/main/superduper/misc/special_dicts.py)
+[Source code](https://github.com/superduper-io/superduper/blob/main/superduper/misc/special_dicts.py)
 
-## `recursive_update` 
+## `dict_to_ascii_table` 
 
 ```python
-recursive_update(data,
-     replace_function: Callable)
+dict_to_ascii_table(d)
 ```
 | Parameter | Description |
 |-----------|-------------|
-| data | Dict, List, Tuple, Set |
-| replace_function | Callable |
+| d | Convert a dictionary to a table. |
 
-Recursively update data with a replace function.
+Return a single string that represents an ASCII table.
+
+Each key/value in the dict is a column.
+Columns are centered and padded based on the widest
+string needed (key or value).
 
 ## `diff` 
 
@@ -48,6 +50,19 @@ recursive_find(data,
 
 Recursively find items in data that satisfy a check function.
 
+## `recursive_update` 
+
+```python
+recursive_update(data,
+     replace_function: Callable)
+```
+| Parameter | Description |
+|-----------|-------------|
+| data | Dict, List, Tuple, Set |
+| replace_function | Callable |
+
+Recursively update data with a replace function.
+
 ## `MongoStyleDict` 
 
 ```python
@@ -62,36 +77,6 @@ MongoStyleDict(self,
 | kwargs | **kwargs for `dict` |
 
 Dictionary object mirroring how MongoDB handles fields.
-
-## `SuperDuperFlatEncode` 
-
-```python
-SuperDuperFlatEncode(self,
-     *args,
-     **kwargs)
-```
-| Parameter | Description |
-|-----------|-------------|
-| args | *args for `dict` |
-| kwargs | **kwargs for `dict` |
-
-Dictionary for representing flattened encoding data.
-
-## `ArgumentDefaultDict` 
-
-```python
-ArgumentDefaultDict(self,
-     *args,
-     default_factory,
-     **kwargs)
-```
-| Parameter | Description |
-|-----------|-------------|
-| args | *args for `dict` |
-| default_factory | Callable used to create default dependent on key |
-| kwargs | **kwargs for `dict` |
-
-Default-dictionary which takes the key as an argument to default factory.
 
 ## `IndexableDict` 
 

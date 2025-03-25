@@ -1,5 +1,13 @@
 # Text vector search
 
+<!-- TABS -->
+## Connect to superduper
+
+:::note
+Note that this is only relevant if you are running superduper in development mode.
+Otherwise refer to "Configuring your production system".
+:::
+
 
 ```python
 APPLY = False
@@ -24,7 +32,7 @@ import io
 
 def getter():
     response = requests.get('https://superduperdb-public-demo.s3.amazonaws.com/text.json')
-    return json.loads(response.content.decode('utf-8'))
+    return [{'x': x} for x in json.loads(response.content.decode('utf-8'))]
 ```
 
 
@@ -104,24 +112,26 @@ OpenAI:
 
 
 ```python
-from superduper.components.vector_index import sqlvector
+from superduper.components.datatype import Vector
 from superduper_openai import OpenAIEmbedding
 
-openai_embedding = OpenAIEmbedding(identifier='text-embedding-ada-002', datatype=sqlvector(shape=(1536,)))
+openai_embedding = OpenAIEmbedding(
+    identifier='text-embedding-ada-002',
+    datatype=Vector(shape=(1536,)),
+)
 ```
 
 Sentence-transformers
 
 
 ```python
-from superduper.components.vector_index import sqlvector
 from superduper_sentence_transformers import SentenceTransformer
 
 sentence_transformers_embedding = SentenceTransformer(
     identifier="sentence-transformers-embedding",
     model="BAAI/bge-small-en",
-    datatype=sqlvector(shape=(1024,)),
-    postprocess=lambda x: x.tolist(),
+    datatype=Vector(shape=(1024,)),
+    postprocess=lambda x: x.numpy(),
     predict_kwargs={"show_progress_bar": True},
 )
 ```
@@ -201,7 +211,7 @@ vector_search_query = db[f'_outputs__chunker_{COLLECTION_NAME}'].like(
 
 ```python
 if APPLY:
-    vector_search_query.tolist()
+    print(vector_search_query.tolist())
 ```
 
 
@@ -230,7 +240,8 @@ qt = QueryTemplate(
             'choices': ['mongodb', 'ibis'],
             'default': 'mongodb'
         }
-    }
+    },
+    db=db
 )
 ```
 
@@ -244,14 +255,14 @@ from superduper.components.dataset import RemoteData
 template = Template(
     'text_vector_search',
     template=app,
-    default_table=Table(
+    default_tables=[Table(
         'sample_text_vector_search',
         schema=Schema('sample_text_vector_search/schema', fields={'x': 'str'}),
         data=RemoteData(
             'superduper-docs',
             getter=getter,
         )
-    ),
+    )],
     queries=[qt],
     substitutions={COLLECTION_NAME: 'table_name', 'mongodb': 'data_backend'},
     template_variables=['embedding_model', 'table_name', 'data_backend'],
@@ -270,7 +281,8 @@ template = Template(
             'choices': ['mongodb', 'ibis'],
             'default': 'mongodb'
         }
-    }
+    },
+    db=db
 )
 ```
 

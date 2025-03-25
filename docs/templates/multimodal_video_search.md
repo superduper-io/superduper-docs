@@ -53,9 +53,8 @@ It also supports custom data conversion methods for transforming data, such as d
 ```python
 from superduper.components.table import Table
 from superduper import Schema
-from superduper.components.datatype import file_lazy
 
-schema = Schema(identifier="schema", fields={"x": file_lazy})
+schema = Schema(identifier="schema", fields={"x": 'file'})
 table = Table(TABLE_NAME, schema=schema)
 
 if APPLY:
@@ -65,7 +64,7 @@ if APPLY:
 
 ```python
 if APPLY:
-    db[TABLE_NAME].insert(datas).execute()
+    db[TABLE_NAME].insert(data).execute()
 ```
 
 <!-- TABS -->
@@ -77,6 +76,11 @@ If your data is already chunked (e.g. short text snippets or audio) or if you
 are searching through something like images, which can't be chunked, then this
 won't be necessary.
 :::
+
+
+```python
+!pip install opencv-python
+```
 
 
 ```python
@@ -156,8 +160,8 @@ We define the output data type of a model as a vector for vector transformation.
 
 
 ```python
-from superduper.components.vector_index import sqlvector
-output_datatype = sqlvector(shape=(1024,))
+from superduper.components.datatype import Vector
+output_datatype = Vector(shape=(1024,))
 ```
 
 Then define two models, one for text embedding and one for image embedding.
@@ -165,7 +169,7 @@ Then define two models, one for text embedding and one for image embedding.
 
 ```python
 import clip
-from superduper import vector, imported
+from superduper import imported
 from superduper_torch import TorchModel
 
 vit = imported(clip.load)("ViT-B/32", device='cpu')
@@ -174,7 +178,7 @@ compatible_model = TorchModel(
     identifier='clip_text',
     object=vit[0],
     preprocess=lambda x: clip.tokenize(x)[0], 
-    postprocess=lambda x: x.tolist(),
+    postprocess=lambda x: x.numpy(),
     datatype=output_datatype,
     forward_method='encode_text',
 )
@@ -246,16 +250,21 @@ We can perform the vector searches using text description:
 
 ```python
 from superduper import Document
-item = Document({'text': "A single red and a blue player battle for the ball"})
+item = Document({'text': "Monkeys playing"})
 ```
 
 
 ```python
 from superduper import Document
-item = Document({'text': "Some monkeys playing"})
+item = Document({'text': "Spaceship on the moon"})
 ```
 
 Once we have this search target, we can execute a search as follows.
+
+
+```python
+list(db['docs'].select().execute())
+```
 
 ## Visualize Results
 
@@ -263,7 +272,7 @@ Once we have this search target, we can execute a search as follows.
 ```python
 if APPLY:
     from IPython.display import display
-    select = db[upstream_listener.outputs].like(item, vector_index='my-vector-index', n=5).select()
+    select = db[upstream_listener.outputs].like(item, vector_index='my-vector-index', n=1).select()
 
     for result in select.execute():
         display(Document(result.unpack())[upstream_listener.outputs + '.image'])
@@ -278,23 +287,24 @@ t = Template(
     'multimodal_video_search', 
     template=app,
     substitutions={'docs': 'table_name'},
-    default_table=Table(
+    default_tables=[Table(
         'sample_multimodal_video_search',
         schema=Schema(
             'sample_multimodal_video_search/schema',
-            fields={'x': file_lazy},
+            fields={'x': 'file'},
         ),
         data=RemoteData(
             'sample_videos',
             getter=getter,
         )
-    ),
+    )],
     types={
         'table_name': {
             'type': 'str',
             'default': 'sample_multimodal_video_search',
         }
-    }
+    },
+    db=db,
 )
 ```
 

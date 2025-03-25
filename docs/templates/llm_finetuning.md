@@ -1,5 +1,13 @@
 # Fine tune LLM on database
 
+<!-- TABS -->
+## Connect to superduper
+
+:::note
+Note that this is only relevant if you are running superduper in development mode.
+Otherwise refer to "Configuring your production system".
+:::
+
 
 ```python
 APPLY = True
@@ -117,7 +125,6 @@ trainer = LLMTrainer(
     per_device_train_batch_size=1,
     per_device_eval_batch_size=1,
     gradient_accumulation_steps=2,
-    max_seq_length=512,
     key=key,
     select=select,
     transform=transform,
@@ -147,15 +154,17 @@ if APPLY:
 
 
 ```python
-from superduper import Template, Table, Schema
+from superduper import Template, Table, Schema, Application
 from superduper.components.dataset import RemoteData
 
 llm.trainer.use_lora = "<var:use_lora>"
 llm.trainer.num_train_epochs = "<var:num_train_epochs>"
 
+app = Application(identifier="llm", components=[llm])
+
 t = Template(
     'llm-finetune',
-    template=llm,
+    template=app,
     substitutions={
         TABLE_NAME: 'table_name',
         model_name: 'model_name',

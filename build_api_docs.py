@@ -86,7 +86,7 @@ print(lookup.keys())
 
 for k in lookup:
     content = f'**`{k}`** \n\n'
-    content += f"[Source code](https://github.com/superduper/superduper/blob/main/{k.replace('.', '/')}.py)\n\n"
+    content += f"[Source code](https://github.com/superduper-io/superduper/blob/main/{k.replace('.', '/')}.py)\n\n"
     for node in lookup[k]:
         if node['::item'].startswith('_'):
             continue

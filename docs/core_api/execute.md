@@ -34,6 +34,59 @@ q = base_object.method_1(*args_1, **kwargs_1).method_2(*args_2, **kwargs_2)....
 
 ### Selects
 
+***Table select***
+
+```python
+# All data
+data = db['<table>'].execute()
+
+# One datapoint
+r = db['<table>'].get()
+```
+
+***Select columns/ fields***
+
+```python
+data = db['<table>'].select('x', 'y').execute()
+```
+
+***Select rows***
+
+```python
+t = db['<table>']
+data = t.filter(t['x'] > 2).execute()
+```
+
+***Select rows and columns***
+
+```python
+t = db['<table>']
+data = t.filter(t['x'] > 2).select('x', 'y').execute()
+```
+
+***Get outputs of one or more `Listener` instances***
+
+```python
+listener_1 = db.load('Listener', '<listener_1>')
+listener_2 = db.load('Listener', '<listener_2>')
+joined_outputs_1 = db['<table>'].outputs(listener_1.predict_id).execute()
+joined_both_outputs = db['<table>'].outputs(listener_1.predict_id, listener_2.predict_id).execute()
+```
+
+***Get the ids of a query***
+
+```python
+query = db['<table'>]   # Any select
+ids = query.ids()
+```
+
+***Get the distinct values of a column***
+
+```python
+query = db['<table'>]   # Any select q
+distinct_x = query.distinct('x')
+```
+
 ***MongoDB***
 
 A MongoDB `find` query can be built like this:

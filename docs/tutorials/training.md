@@ -24,8 +24,9 @@ After establishing a connection to MongoDB, the next step is to load the MNIST d
 
 
 ```python
+import random
 import torchvision
-from superduper import Document
+from superduper import Table
 
 import random
 
@@ -33,14 +34,20 @@ import random
 # Each MNIST item is a tuple (image, label)
 mnist_data = list(torchvision.datasets.MNIST(root='./data', download=True))
 
-document_list = [Document({'img': x[0], 'class': x[1]}) for x in mnist_data]
+get_fold = lambda: {True: 'valid', False: 'train'}[random.random() < 0.1]
+
+document_list = [{'img': x[0], 'class': x[1], '_fold': get_fold()} for x in mnist_data]
+
+mnist = Table('mnist', fields={'img': 'superduper_pillow.pil_image', 'class': 'int', '_fold': 'str'})
+
+db.apply(mnist, force=True)
 
 # Shuffle the data and select a subset of 1000 documents
 random.shuffle(document_list)
 data = document_list[:1000]
 
 # Insert the selected data into the mnist_collection which we mentioned before like: mnist_collection = Collection('mnist')
-db['mnist'].insert_many(data[:-100]).execute()
+_ = db['mnist'].insert(data[:-100])
 ```
 
 Now that the images and their classes are inserted into the database, we can query the data in its original format. Particularly, we can use the `PIL.Image` instances to inspect the data.
@@ -48,8 +55,8 @@ Now that the images and their classes are inserted into the database, we can que
 
 ```python
 # Get and display one of the images
-r = db['mnist'].find_one().execute()
-r.unpack()['img'].resize((300, 300))
+r = db['mnist'].get()
+r['img'].resize((300, 300))
 ```
 
 Following that, we build our machine learning model. superduper conveniently supports various frameworks, and for this example, we opt for PyTorch, a suitable choice for computer vision tasks. In this instance, we combine `torch` with `torchvision`.
@@ -58,7 +65,8 @@ To facilitate communication with the superduper `Datalayer`, we design `postproc
 
 
 ```python
-from superduper.ext.torch import TorchModel
+from superduper_torch import TorchModel
+from superduper.misc.utils import hash_item
 
 import torch
 
@@ -85,6 +93,11 @@ class LeNet5(torch.nn.Module):
         self.relu1 = torch.nn.ReLU()
         self.fc2 = torch.nn.Linear(84, num_classes)
 
+    def __hash__(self):
+        k = next(iter(lenet_model.state_dict().keys()))
+        weight = self.state_dict()[k].tolist()
+        return int(hash_item(weight), 16)
+        
     def forward(self, x):
         out = self.layer1(x)
         out = self.layer2(out)
@@ -133,7 +146,7 @@ which developers may implement for their specific model class. `torch` models co
 from torch.nn.functional import cross_entropy
 
 from superduper import Metric, Validation, Dataset
-from superduper.ext.torch import TorchTrainer
+from superduper_torch import TorchTrainer
 
 acc = lambda x, y: (sum([xx == yy for xx, yy in zip(x, y)]) / len(x))
 
@@ -141,10 +154,11 @@ accuracy = Metric(identifier='acc', object=acc)
 
 model.validation = Validation(
     'mnist_performance',
+    key=['img', 'class'],
     datasets=[
         Dataset(
             identifier='my-valid',
-            select=db['mnist'].find({'_fold': 'valid'})
+            select=db['mnist'].filter(db['mnist']['_fold'] == 'valid'),
         )
     ],
     metrics=[accuracy],
@@ -154,14 +168,19 @@ model.trainer = TorchTrainer(
     identifier='my-trainer',
     objective=cross_entropy,
     loader_kwargs={'batch_size': 10},
-    max_iterations=1000,
-    validation_interval=5,
-    select=db['mnist'].find(),
+    max_iterations=10,
+    validation_interval=3,
+    select=db['mnist'],
     key=('img', 'class'),
     transform=lambda x, y: (preprocess(x), y),
 )
 
 _ = db.apply(model)
+```
+
+
+```python
+db.remove('TorchModel', 'my-model')
 ```
 
 The trained model is now available via `db.load` - the `model.trainer` object contains the metric traces
@@ -172,7 +191,7 @@ logged during training.
 from matplotlib import pyplot as plt
 
 # Load the model from the database
-model = db.load('model', model.identifier)
+model = db.load('TorchModel', model.identifier)
 
 # Plot the accuracy values
 plt.plot(model.trainer.metric_values['my-valid/acc'])

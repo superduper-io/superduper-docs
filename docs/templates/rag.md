@@ -1,8 +1,16 @@
 # Retrieval augmented generation
 
+<!-- TABS -->
+## Connect to superduper
+
+:::note
+Note that this is only relevant if you are running superduper in development mode.
+Otherwise refer to "Configuring your production system".
+:::
+
 
 ```python
-APPLY = False
+APPLY = True
 COLLECTION_NAME = '<var:table_name>' if not APPLY else 'sample_rag'
 ID_FIELD = '<var:id_field>' if not APPLY else 'id'
 ```
@@ -110,11 +118,11 @@ OpenAI:
 
 ```python
 import os
-from superduper.components.vector_index import sqlvector
 
 from superduper_openai import OpenAIEmbedding
+from superduper.components.datatype import Vector
 
-openai_embedding = OpenAIEmbedding(identifier='text-embedding-ada-002' , datatype=sqlvector(shape=(1536,)))
+openai_embedding = OpenAIEmbedding(identifier='text-embedding-ada-002' , datatype=Vector(shape=(1536,)))
 ```
 
 Sentence-transformers
@@ -127,7 +135,7 @@ from superduper_sentence_transformers import SentenceTransformer
 sentence_transformers_embedding = SentenceTransformer(
     identifier="sentence-transformers-embedding",
     model="BAAI/bge-small-en",
-    datatype=sqlvector(shape=(1024,)),
+    datatype=Vector(shape=(1024,)),
     postprocess=lambda x: x.tolist(),
     predict_kwargs={"show_progress_bar": True},
 )
@@ -136,7 +144,7 @@ sentence_transformers_embedding = SentenceTransformer(
 
 ```python
 from superduper.components.model import ModelRouter
-from superduper.components.vector_index import sqlvector
+from superduper.components.datatype import Vector
 
 embedding_model = ModelRouter(
     'embedding',
@@ -191,7 +199,7 @@ predict_kwargs = {
     "temperature": 0.8,
 }
 
-llm_anthropic = AnthropicCompletions(identifier='llm-vllm', model='claude-2.1', predict_kwargs=predict_kwargs)
+llm_anthropic = AnthropicCompletions(identifier='llm-anthropic', model='claude-2.1', predict_kwargs=predict_kwargs)
 ```
 
 
@@ -217,21 +225,12 @@ llm_vllm = VllmCompletion(
 
 
 ```python
-# # !huggingface-cli download TheBloke/Mistral-7B-Instruct-v0.2-GGUF mistral-7b-instruct-v0.2.Q4_K_M.gguf --local-dir . --local-dir-use-symlinks False
-# from superduper_llamacpp.model import LlamaCpp
-
-# llm_llamacpp = LlamaCpp(identifier="llm-llamacpp", model_name_or_path="mistral-7b-instruct-v0.2.Q4_K_M.gguf")
-```
-
-
-```python
 llm = ModelRouter(
     'llm',
     models={
         'openai': llm_openai,
         'anthropic': llm_anthropic,
         'vllm': llm_vllm,
-        # 'llamacpp': llm_llamacpp,
     },
     model='<var:llm_model>' if not APPLY else 'openai',
 )
@@ -306,7 +305,7 @@ from superduper.components.dataset import RemoteData
 template = Template(
     'rag',
     template=app,
-    default_table=Table(
+    default_tables=[Table(
         'sample_rag',
         schema=Schema(
             'sample_rag/schema',
@@ -316,7 +315,7 @@ template = Template(
             'superduper-docs',
             getter=getter,
         )
-    ),
+    )],
     substitutions={COLLECTION_NAME: 'table_name'},
     template_variables=['llm_model', 'embedding_model', 'table_name', 'id_field'],
     types={
@@ -338,7 +337,8 @@ template = Template(
             'type': 'str',
             'default': 'sample_rag'
         },
-    }
+    },
+    db=db
 )
 ```
 

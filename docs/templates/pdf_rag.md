@@ -4,26 +4,26 @@ This is a PDF-based RAG application. While answering questions, it accesses rele
 
 
 ```python
-APPLY = False
+APPLY = True
+EAGER = False
 COLLECTION_NAME = '<var:table_name>' if not APPLY else 'sample_pdf_rag'
 ```
 
 
 ```python
 from superduper import superduper, CFG
-CFG.bytes_encoding = 'str'
-CFG.native_json = False
 ```
 
 
 ```python
-db = superduper("mongomock://")
+db = superduper('mongomock://test')
 ```
 
 
 ```python
 def getter():
     import subprocess
+    import os
     subprocess.run(['curl', '-O', 'https://superduperdb-public-demo.s3.amazonaws.com/pdfs.zip'])
     subprocess.run(['unzip', '-o', 'pdfs.zip'])
     subprocess.run(['rm', 'pdfs.zip'])
@@ -46,9 +46,9 @@ if APPLY:
 ```python
 import os
 from superduper import Schema, Table
-from superduper.components.datatype import file_lazy
+from superduper.components.datatype import file
 
-schema = Schema(identifier="myschema", fields={'url': 'str', 'file': file_lazy})
+schema = Schema(identifier="myschema", fields={'url': 'str', 'file': file})
 table = Table(identifier=COLLECTION_NAME, schema=schema)
 
 if APPLY:
@@ -56,7 +56,17 @@ if APPLY:
     db[COLLECTION_NAME].insert(data).execute()
 ```
 
+
+```python
+db.show()
+```
+
 ## Split the PDF file into images for later result display
+
+
+```python
+!pip install pdf2image
+```
 
 
 ```python
@@ -88,7 +98,7 @@ def split_image(pdf_path):
 model_split_image = ObjectModel(
     identifier="split_image",
     object=split_image,
-    datatype=file_lazy,
+    datatype=file,
 )
 
 listener_split_image = model_split_image.to_listener(
@@ -97,7 +107,7 @@ listener_split_image = model_split_image.to_listener(
     flatten=True,
 )
 
-if APPLY:
+if EAGER and APPLY:
     db.apply(listener_split_image, force=True)
 ```
 
@@ -230,7 +240,7 @@ listener_chunk = model_chunk.to_listener(
     flatten=True,
 )
 
-if APPLY:
+if EAGER and APPLY:
     db.apply(listener_chunk, force=True)
 ```
 
@@ -240,49 +250,23 @@ OpenAI:
 
 
 ```python
-import os
-from superduper.components.vector_index import sqlvector
+pip install -e ../../plugins/openai
+```
 
+
+```python
 from superduper_openai import OpenAIEmbedding
-
-openai_embedding = OpenAIEmbedding(identifier='text-embedding-ada-002' , datatype=sqlvector(shape=(1536,)))
-```
-
-Sentence-transformers:
-
-
-```python
-import sentence_transformers
-from superduper_sentence_transformers import SentenceTransformer
-
-sentence_transformers_embedding = SentenceTransformer(
-    identifier="sentence-transformers-embedding",
-    model="BAAI/bge-small-en",
-    datatype=sqlvector(shape=(1024,)),
-    postprocess=lambda x: x.tolist(),
-    predict_kwargs={"show_progress_bar": True},
-)
-```
-
-
-```python
-from superduper.components.model import ModelRouter
-from superduper.components.vector_index import sqlvector
-
-model_embedding = ModelRouter(
-    'embedding',
-    models={'openai': openai_embedding, 'sentence_transformers': sentence_transformers_embedding},
-    model='<var:embedding_model>' if not APPLY else 'openai',
-    example='this is a test',
-)
+from superduper.components.datatype import Vector
+openai_embedding = OpenAIEmbedding(identifier='embedding', model='text-embedding-ada-002', datatype=Vector(shape=(1536,)))
 ```
 
 
 ```python
 from superduper_openai.model import OpenAIEmbedding
 from superduper import VectorIndex
+from superduper.components.datatype import Vector
 
-listener_embedding = model_embedding.to_listener(
+listener_embedding = openai_embedding.to_listener(
     key=f"{listener_chunk.outputs}.txt",
     select=db[listener_chunk.outputs].select(),
 )
@@ -292,9 +276,8 @@ vector_index = VectorIndex(
     indexing_listener=listener_embedding,
 )
 
-if APPLY:
+if EAGER and APPLY:
     db.apply(vector_index, force=True)
-
 ```
 
 ## Create a plugin
@@ -328,21 +311,15 @@ from superduper import Model, logging
 
 class Rag(Model):
     llm_model: Model
-    vector_index_name: str
     prompt_template: str
     processor: None | Model = None
+    vector_index: VectorIndex
 
     def __post_init__(self, *args, **kwargs):
         assert "{context}" in self.prompt_template, 'The prompt_template must include "{context}"'
         assert "{query}" in self.prompt_template, 'The prompt_template must include "{query}"'
         super().__post_init__(*args, **kwargs)
 
-    def init(self, db=None):
-        db = db or self.db
-        self.vector_index = self.db.load("vector_index", self.vector_index_name)
-        super().init(db=db)
-        
-    
     def predict(self, query, top_k=5, format_result=False):
         vector_search_out = self.vector_search(query, top_k=top_k)
         key = self.vector_index.indexing_listener.key
@@ -383,52 +360,6 @@ llm_openai = OpenAIChatCompletion(identifier='llm-openai', model='gpt-3.5-turbo'
 
 
 ```python
-from superduper_anthropic import AnthropicCompletions
-
-predict_kwargs = {
-    "max_tokens": 1024,
-    "temperature": 0.8,
-}
-
-llm_anthropic = AnthropicCompletions(identifier='llm-anthropic', model='claude-2.1', predict_kwargs=predict_kwargs)
-```
-
-
-```python
-from superduper_vllm import VllmCompletion
-
-predict_kwargs = {
-    "max_tokens": 1024,
-    "temperature": 0.8,
-}
-
-llm_vllm = VllmCompletion(
-    identifier="llm-vllm",
-    vllm_params={
-        'model': 'TheBloke/Mistral-7B-Instruct-v0.2-AWQ',
-        "gpu_memory_utilization": 0.7,
-        "max_model_len": 1024,
-        "quantization": "awq",
-    },
-    predict_kwargs=predict_kwargs,
-)
-```
-
-
-```python
-llm = ModelRouter(
-    'llm',
-    models={
-        'openai': llm_openai,
-        'anthropic': llm_anthropic,
-        'vllm': llm_vllm,
-    },
-    model='<var:llm_model>' if not APPLY else 'openai',
-)
-```
-
-
-```python
 from superduper_openai.model import OpenAIChatCompletion
 
 prompt_template = (
@@ -440,22 +371,15 @@ prompt_template = (
     "answer:"
 )
 
-rag = Rag(identifier="rag", llm_model=llm, vector_index_name=vector_index.identifier, prompt_template=prompt_template, db=db, processor=processor)
-```
-
-
-```python
-from IPython.display import Image, Markdown, display
-
-if APPLY:
-    db.apply(rag, force=True)
-    result = rag.predict("How to perform Query Optimization?", format_result=True)
-    
-    display(Markdown(result["answer"]))
-    
-    for message, img in result["images"]:
-        display(Markdown(message))
-        display(img)
+rag = Rag(
+    identifier="rag",
+    llm_model=llm_openai,
+    vector_index=vector_index, 
+    prompt_template=prompt_template,
+    db=db,
+    processor=processor,
+    upstream=[vector_index],
+)
 ```
 
 ## Create template
@@ -473,7 +397,29 @@ app = Application(
         vector_index,
         rag
     ]
+    
 )
+```
+
+
+```python
+if APPLY:
+    db.apply(app)
+```
+
+
+```python
+from IPython.display import Image, Markdown, display
+
+if APPLY:
+    db.apply(rag, force=True)
+    result = rag.predict("Tell me about GPT on the basis of these data.", format_result=True)
+    
+    display(Markdown(result["answer"]))
+    
+    for message, img in result["images"]:
+        display(Markdown(message))
+        display(img)
 ```
 
 
@@ -483,17 +429,24 @@ from superduper.components.dataset import RemoteData
 
 template = Template(
     'pdf-rag',
+    db=db,
     template=app,
-    substitutions={prompt_template: 'prompt_template', COLLECTION_NAME: 'table_name'},
+    substitutions={
+        prompt_template: 
+        'prompt_template',
+        COLLECTION_NAME: 'table_name',
+        'gpt-3.5-turbo': 'llm_model',
+        'text-embedding-ada-002': 'embedding_model'
+    },
     template_variables=['table_name', 'prompt_template', 'llm_model', 'embedding_model'],
-    default_table=Table(
+    default_tables=[Table(
         'sample_pdf_rag',
         schema=Schema(
             'sample_pdf_rag/schema',
-            fields={"url": "str", "file": file_lazy}
+            fields={"url": "str", "file": file}
         ),
         data=RemoteData('sample_pdfs', getter=getter),
-    ),
+    )],
     types={
         'prompt_template':{
             'type': 'str',
@@ -505,13 +458,11 @@ template = Template(
         },
         'llm_model': {
             'type': 'str',
-            'choices': ['openai', 'anthropic', 'vllm'],
-            'default': 'openai',
+            'default': 'gpt-3.5-turbo',
         },
         'embedding_model': {
             'type': 'str',
-            'choices': ['openai', 'sentence_transformers'],
-            'default': 'openai',
+            'default': 'text-embedding-ada-002',
         },
     }
 )

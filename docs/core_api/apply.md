@@ -10,7 +10,7 @@ In addition there is an overarching component:
 
 - [`Application`](../apply_api/Application)
 
-which in some sense "rules them all"
+which in some sense "rules them all".
 
 Whenever you wish to apply AI to your data, you will instantiate one of more of these, and "apply" these to 
 your connection:
@@ -46,9 +46,9 @@ be made searchable via vector-search queries.
 
 Read more about `VectorIndex` [here](../apply_api/vector_index).
 
-## Connecting component: `Stack`
+## Connecting component: `Application`
 
-A `Stack` of AI functionality is a combination of multiple `Model`, `Listener`, and `VectorIndex` components which may be "applied" in 
+A `Application` of AI functionality is a combination of multiple `Model`, `Listener`, and `VectorIndex` components which may be "applied" in 
 one pass to your data via superduper. 
 
 On `db.add(stack)` superduper performs the heavy lifting of deciding which components need to be applied 
@@ -65,22 +65,22 @@ View all components:
 ```python
 >>> db.show()
 [
-  {'type_id': 'model', 'identifier': 'my-model'},
-  {'type_id': 'model', 'identifier': 'my-other-model'}
+  {'component': 'MyModel', 'identifier': 'my-model'},
+  {'component': 'MyOtherModel', 'identifier': 'my-other-model'}
 ]
 ```
 
 View all components of a certain type:
 
 ```python
->>> db.show('<type_id>')
+>>> db.show('<component>')
 ['my-model', 'my-other-model']
 ```
 
 View all versions of a particular component:
 
 ```python
->>> db.show('<type_id>', '<component_identifier>')
+>>> db.show('<component>', '<component_identifier>')
 [0, 1, 2, 3]
 ```
 
@@ -90,11 +90,11 @@ When components are applied with `db.apply(component)`, the component is provide
 By default the latest version is reloaded:
 
 ```python
-reloaded = db.load('<type_id>', '<component_identifier>')
+reloaded = db.load('<component>', '<component_identifier>')
 ```
 
 ```python
-reloaded = db.load('<type_id>', '<component_identifier>', <version>)
+reloaded = db.load('<component>', '<component_identifier>', <version>)
 ```
 
 For example to reload a model, identified by 'my-model', the first version added:

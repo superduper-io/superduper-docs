@@ -1,13 +1,13 @@
 **`superduper.misc.serialization`** 
 
-[Source code](https://github.com/superduper/superduper/blob/main/superduper/misc/serialization.py)
+[Source code](https://github.com/superduper-io/superduper/blob/main/superduper/misc/serialization.py)
 
 ## `asdict` 
 
 ```python
 asdict(obj,
      *,
-     copy_method=<function copy at 0x104cf7d00>) -> Dict[str,
+     copy_method=<function copy at 0x1051283a0>) -> Dict[str,
      Any]
 ```
 | Parameter | Description |

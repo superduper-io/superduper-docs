@@ -41,7 +41,7 @@ The `.apply` command saves everything necessary to reload the component
 from the Superduper system.
 
 ```python
-reloaded = db.load('type_id', 'identifier')   # `type_id`
+reloaded = db.load('<ComponentClass>', '<identifier>') 
 ```
 
 ### 4. Export the component (to share/ migrate)

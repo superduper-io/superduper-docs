@@ -7,15 +7,6 @@ and transported to other Superduper deployments with `db.apply`.
 To make our lives difficult, we'll include a data blob in the model, which should be serialized with the 
 exported class:
 
-
-```python
-!curl -O https://superduperdb-public-demo.s3.amazonaws.com/text.json
-import json
-
-with open('text.json') as f:
-    data = json.load(f)
-```
-
 We'll define our own `Model` descendant, with a custom `.predict` method. 
 We are free to define any of our own parameters to this class with a simple annotation in the header, since `Model` 
 is a `dataclasses.dataclass`:
@@ -23,14 +14,12 @@ is a `dataclasses.dataclass`:
 
 ```python
 from superduper import *
-
-
-requires_packages(['openai', None, None])
+import typing as t
 
 
 class NewModel(Model):
     a: int = 2
-    b: list
+    b: t.Any
 
     def predict(self, x):
         return x * self.a
@@ -41,7 +30,7 @@ annotate this in the `artifacts=...` parameter, supplying the serializer we woul
 
 
 ```python
-m = NewModel('test-hg', a=2, b=data, artifacts={'b': pickle_serializer})
+m = NewModel('test-hg', a=2, b=data)
 ```
 
 Now we can export the model:

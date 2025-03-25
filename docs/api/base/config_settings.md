@@ -1,6 +1,6 @@
 **`superduper.base.config_settings`** 
 
-[Source code](https://github.com/superduper/superduper/blob/main/superduper/base/config_settings.py)
+[Source code](https://github.com/superduper-io/superduper/blob/main/superduper/base/config_settings.py)
 
 ## `ConfigError` 
 

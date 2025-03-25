@@ -1,6 +1,6 @@
 **`superduper.base.annotations`** 
 
-[Source code](https://github.com/superduper/superduper/blob/main/superduper/base/annotations.py)
+[Source code](https://github.com/superduper-io/superduper/blob/main/superduper/base/annotations.py)
 
 ## `trigger` 
 

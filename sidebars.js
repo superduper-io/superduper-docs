@@ -30,9 +30,9 @@ const sidebars = {
         'tutorials/vector_search',
         'tutorials/listening',
         'tutorials/rag',
+        'tutorials/agent_tutorial',
         'tutorials/training',
         'tutorials/custom_serialization',
-        'tutorials/eager_mode',
         'tutorials/application_template',
       ],
     },
@@ -161,24 +161,8 @@ const sidebars = {
       },
       items: [
         'data_plugins/mongodb',
-        {
-          type: 'category',
-          label: 'SQL Databases',
-          collapsed: false,
-          link: {
-            type: 'doc',
-            id: 'data_plugins/ibis',
-          },
-          items: [
-            'data_plugins/mysql',
-            'data_plugins/postgresql',
-            'data_plugins/snowflake',
-            'data_plugins/sqlite',
-            'data_plugins/duckdb',
-          ],
-        },
-        'data_plugins/pandas',
-        'data_plugins/sqlalchemy',
+        'data_plugins/sql',
+        'data_plugins/snowflake',
       ],
     },
     {

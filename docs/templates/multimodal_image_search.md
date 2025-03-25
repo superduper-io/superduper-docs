@@ -1,5 +1,13 @@
 # Multimodal vector search - images
 
+<!-- TABS -->
+## Connect to superduper
+
+:::note
+Note that this is only relevant if you are running superduper in development mode.
+Otherwise refer to "Configuring your production system".
+:::
+
 
 ```python
 APPLY = False
@@ -47,20 +55,22 @@ if APPLY:
 
 We define the output data type of a model as a vector for vector transformation.
 
-
-```python
-from superduper.components.vector_index import sqlvector
-
-output_datatype = sqlvector(shape=(1024,))
-```
-
 Then define two models, one for text embedding and one for image embedding.
 
 
 ```python
+from superduper.components.datatype import Vector
+
+output_datatype = Vector(shape=(1024,))
+```
+
+
+```python
 import clip
-from superduper import vector, imported
+from superduper import imported
 from superduper_torch import TorchModel
+import numpy
+
 
 rn50 = imported(clip.load)('RN50', device='cpu')
 
@@ -68,7 +78,7 @@ compatible_model = TorchModel(
     identifier='clip_text',
     object=rn50[0],
     preprocess=lambda x: clip.tokenize(x)[0],
-    postprocess=lambda x: x.tolist(),
+    postprocess=lambda x: x.numpy(),
     datatype=output_datatype,
     forward_method='encode_text',
 )
@@ -77,7 +87,7 @@ embedding_model = TorchModel(
     identifier='clip_image',
     object=rn50[0].visual,
     preprocess=rn50[1],
-    postprocess=lambda x: x.tolist(),
+    postprocess=lambda x: x.numpy(),
     datatype=output_datatype,
 )
 ```
@@ -215,14 +225,4 @@ template = Template(
 )
 
 template.export('.')
-```
-
-
-```python
-template.template
-```
-
-
-```python
-vector_index.indexing_listener.select
 ```

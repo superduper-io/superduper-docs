@@ -3,6 +3,7 @@
 
 ```python
 APPLY = False
+EAGER = False
 COLLECTION_NAME = '<var:table_name>' if not APPLY else 'sample_transfer_learning'
 MODALITY = 'text'
 ```
@@ -55,6 +56,7 @@ After turning on auto_schema, we can directly insert data, and superduper will a
 
 ```python
 if APPLY:
+    data = getter()
     from superduper import Document
     ids = db[COLLECTION_NAME].insert([Document(r) for r in data]).execute()
 ```
@@ -65,7 +67,7 @@ if APPLY:
 
 ```python
 import sentence_transformers
-from superduper import vector, Listener
+from superduper import Listener
 from superduper_sentence_transformers import SentenceTransformer
 
 
@@ -137,7 +139,7 @@ feature_extractor_listener = Listener(
 )
 
 
-if APPLY:
+if APPLY and EAGER:
     feature_extractor_listener = db.apply(
         feature_extractor_listener,
         force=True,
@@ -258,23 +260,17 @@ estimator = ModelRouter(
         'torch-framework': torch_model,
     },
     model='scikit-framework',
+    upstream=[feature_extractor_listener],
 )
 ```
 
 
 ```python
-if APPLY:
+if APPLY and EAGER:
     db.apply(estimator, force=True)
 ```
 
 Get the training metrics
-
-
-```python
-if APPLY:
-    model = db.load('model', 'my-model-scikit')
-    model.metric_values
-```
 
 
 ```python
@@ -288,12 +284,25 @@ application = Application(
 
 
 ```python
+if APPLY:
+    db.apply(application)
+```
+
+
+```python
+if APPLY:
+    model = db.load('model', 'my-model-scikit')
+    model.metric_values
+```
+
+
+```python
 from superduper import Template, Table, Schema
 from superduper.components.dataset import RemoteData
 
 t = Template(
     'transfer_learning',
-    default_table=Table(
+    default_tables=[Table(
         'sample_transfer_learning',
         schema=Schema(
             'sample_transfer_learning/schema',
@@ -303,7 +312,7 @@ t = Template(
             'text_classification',
             getter=getter,
         ),
-    ),
+    )],
     template=application,
     substitutions={'docs': 'table_name', 'text': 'modality'},
     template_variables=['table_name', 'framework', 'modality'],
@@ -320,7 +329,8 @@ t = Template(
             'type': 'str',
             'default': 'scikit-framework',
         },
-    }
+    },
+    db=db
 )
 ```
 

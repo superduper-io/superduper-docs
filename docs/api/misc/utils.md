@@ -1,17 +1,17 @@
-**`superduper.ext.utils`** 
+**`superduper.misc.utils`** 
 
-[Source code](https://github.com/superduper/superduper/blob/main/superduper/ext/utils.py)
+[Source code](https://github.com/superduper-io/superduper/blob/main/superduper/misc/utils.py)
 
-## `str_shape` 
+## `hash_item` 
 
 ```python
-str_shape(shape: Sequence[int]) -> str
+hash_item(item: Any) -> str
 ```
 | Parameter | Description |
 |-----------|-------------|
-| shape | The shape to convert. |
+| item | The item to hash. |
 
-Convert a shape to a string.
+Hash an item.
 
 ## `format_prompt` 
 
@@ -28,14 +28,14 @@ format_prompt(X: str,
 
 Format a prompt with the given input and context.
 
-## `get_key` 
+## `str_shape` 
 
 ```python
-get_key(key_name: str) -> str
+str_shape(shape: Sequence[int]) -> str
 ```
 | Parameter | Description |
 |-----------|-------------|
-| key_name | The name of the environment variable to get. |
+| shape | The shape to convert. |
 
-Get an environment variable.
+Convert a shape to a string.
 

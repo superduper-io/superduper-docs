@@ -24,7 +24,7 @@ for quick experimentation.
 
 
 ```python
-!curl -O https://superduperdb-public-demo.s3.amazonaws.com/images.zip && unzip images.zip
+# !curl -O https://superduperdb-public-demo.s3.amazonaws.com/images.zip && unzip images.zip
 from PIL import Image
 import os
 
@@ -38,26 +38,23 @@ The same pattern may be applied to other database types.
 
 
 ```python
-from superduper import superduper, Document
+from superduper import superduper, Document, Table
 
 db = superduper('mongomock://')
 
-db['images'].insert_many([Document(r) for r in data[:-1]]).execute()
+table = Table('images', fields={'img': 'superduper_pillow.pil_image'})
+
+db.apply(table, force=True)
+
+_ = db['images'].insert(data[:-1])
 ```
 
 We can verify that the images are correctly saved by retrieved a single record:
 
 
 ```python
-r = db['images'].find_one().execute()
-r
-```
-
-The contents of the `Document` may be accessed by calling `.unpack()`. You can see that the images were saved and retrieved correctly.
-
-
-```python
-r.unpack()['img']
+r = db['images'].get()
+r['img']
 ```
 
 We now build a `torch` model for text-2-image similarity using the `clip` library. In order to 
@@ -66,11 +63,13 @@ save the outputs correctly in the system, we add the `tensor` datatype to the mo
 
 ```python
 import clip
+import hashlib
 import torch
-from superduper.ext.torch import TorchModel, tensor
+from superduper_torch import TorchModel, Tensor
 
 
-model, preprocess = clip.load("ViT-B/32", "cpu")
+model_name = "ViT-B/32"
+model, preprocess = clip.load(model_name, "cpu")
 
 class ImageModel(torch.nn.Module):
     def __init__(self):
@@ -80,25 +79,20 @@ class ImageModel(torch.nn.Module):
     def forward(self, image_tensors):
         return self.model.encode_image(image_tensors)
 
-
-dt = tensor(dtype='float', shape=(512,))
+    def __hash__(self):
+        return int(hashlib.sha256(model_name.encode()).hexdigest(), 16)
 
 
 image_model = TorchModel(
     identifier='clip_image',
     object=ImageModel(),
     preprocess=preprocess,
-    datatype=dt,
+    datatype='superduper_torch.Tensor[float32:512]',
     loader_kwargs={'batch_size': 5},
 )
 ```
 
 We can verify that this model gives us the correct outputs on the added data with the `.predict` method:
-
-
-```python
-image_model.predict(data[0]['img'])
-```
 
 Now we'd like to set up this model to compute outputs on the `'img'` key of each record. 
 To do that we create a `Listener` (see [here](../apply_api/listener) for more information) which 
@@ -109,21 +103,14 @@ feature for productionizing AI and ML, since a data deployment needs to be keep 
 
 
 ```python
-listener = image_model.to_listener(
-    select=db['images'].find(),
+from superduper import Listener
+
+listener = Listener(
+    'image_listener',
+    model=image_model,
+    select=db['images'],
     key='img',
-    identifier='image_predictions',
 )
-
-_ = db.apply(listener)
-```
-
-We can verify that the outputs are correctly inserted into the documents with this query. 
-The outputs are saved in the `listener.outputs` field:
-
-
-```python
-list(listener.outputs_select.limit(1).execute())[0][listener.outputs].unpack()
 ```
 
 Downstream of this first model, we now can add another smaller model, to classify images with configurable terms. 
@@ -132,6 +119,7 @@ Since the dataset is concerned with cats and dogs we create 2 downstream models 
 
 ```python
 from superduper import ObjectModel
+from superduper.misc.utils import hash_item
 
 
 class Comparer:
@@ -144,81 +132,75 @@ class Comparer:
         best = (self.matrix @ vector).topk(1)[1].item()
         return self.lookup[best]
 
+    def __hash__(self):
+        return int(hash_item(self.matrix.detach().numpy().tolist()), 16)
 
-cats_vs_dogs = ObjectModel(
+
+cats_vs_dogs = Listener(
     'cats_vs_dogs',
-    object=Comparer(['cat', 'dog'], model.encode_text(clip.tokenize(['cat', 'dog']))),
-).to_listener(
-    select=db['images'].find(),
+    model=ObjectModel(
+        'cats_vs_dogs',
+        object=Comparer(['cat', 'dog'], model.encode_text(clip.tokenize(['cat', 'dog']))),
+    ),
+    select=db[listener.outputs],
     key=listener.outputs,
+    upstream=[listener],
 )
 
             
-felines_vs_canines = ObjectModel(
-    'felines_vs_canines',
-    object=Comparer(['feline', 'canine'], model.encode_text(clip.tokenize(['feline', 'canine']))),
-).to_listener(
-    select=db['images'].find(),
+felines_vs_canines = Listener(
+    'felines_vs_canines',    
+    model=ObjectModel(
+        'felines_vs_canines',
+        object=Comparer(['feline', 'canine'], model.encode_text(clip.tokenize(['feline', 'canine']))),
+    ),
+    select=db[listener.outputs],
     key=listener.outputs,
+    upstream=[listener],
+)
+```
+
+
+```python
+from superduper import Application
+
+application = Application(
+    'animal_image_analysis',
+    components=[
+        listener,
+        cats_vs_dogs,
+        felines_vs_canines,
+    ]
 )
 
-
-db.apply(cats_vs_dogs)
-db.apply(felines_vs_canines)
+db.apply(application)
 ```
 
 We can verify that both downstream models have written their outputs to the database by querying a document:
 
 
 ```python
-r = db['images'].find_one().execute()
+r = db['images'].outputs(cats_vs_dogs.predict_id, felines_vs_canines.predict_id).get()
 
 print(r[cats_vs_dogs.outputs])
 print(r[felines_vs_canines.outputs])
-```
-
-Let's check that the predictions make sense for the inserted images:
-
-
-```python
-db['images'].find_one({cats_vs_dogs.outputs: 'cat'}).execute()['img']
+r['img']
 ```
 
 
 ```python
-db['images'].find_one({felines_vs_canines.outputs: 'feline'}).execute()['img']
-```
-
-
-```python
-db['images'].find_one({cats_vs_dogs.outputs: 'dog'}).execute()['img']
-```
-
-
-```python
-db['images'].find_one({felines_vs_canines.outputs: 'canine'}).execute()['img']
-```
-
-Now that we have installed the models using `Listener`, we can insert new data. This 
-data should be automatically processed by the installed models:
-
-
-```python
-db['images'].insert_one(Document({**data[-1], 'new': True})).execute()
+inserted_id = db['images'].insert([data[-1]])[0]
 ```
 
 We can verify this by querying the data again:
 
 
 ```python
-r = db['images'].find_one({'new': True}).execute().unpack()
-r['img']
+r = db['images'].outputs(cats_vs_dogs.predict_id).get(_id=inserted_id)
+r
 ```
-
-You see here that the models have been called in the correct order on the newly added data and the outputs saved 
-to the new record:
 
 
 ```python
-r['_outputs']
+r['img']
 ```

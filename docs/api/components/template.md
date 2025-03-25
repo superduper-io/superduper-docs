@@ -1,99 +1,47 @@
 **`superduper.components.template`** 
 
-[Source code](https://github.com/superduper/superduper/blob/main/superduper/components/template.py)
-
-## `QueryTemplate` 
-
-```python
-QueryTemplate(self,
-     identifier: str,
-     db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
-     uuid: None = <factory>,
-     *,
-     upstream: "t.Optional[t.List['Component']]" = None,
-     plugins: "t.Optional[t.List['Plugin']]" = None,
-     artifacts: 'dc.InitVar[t.Optional[t.Dict]]' = None,
-     cache: 't.Optional[bool]' = True,
-     status: 't.Optional[Status]' = None,
-     template: Union[Dict,
-     superduper.components.component.Component],
-     template_variables: Optional[List[str]] = None,
-     types: None = <factory>,
-     blobs: Optional[List[str]] = None,
-     files: Optional[List[str]] = None,
-     substitutions: dataclasses.InitVar[typing.Optional[typing.Dict]] = None) -> None
-```
-| Parameter | Description |
-|-----------|-------------|
-| identifier | Identifier of the leaf. |
-| db | Datalayer instance. |
-| uuid | UUID of the leaf. |
-| artifacts | A dictionary of artifacts paths and `DataType` objects |
-| upstream | A list of upstream components |
-| plugins | A list of plugins to be used in the component. |
-| cache | (Optional) If set `true` the component will not be cached during primary job of the component i.e on a distributed cluster this component will be reloaded on every component task e.g model prediction. |
-| status | What part of the lifecycle the component is in. |
-| template | Template component with variables. |
-| template_variables | Variables to be set. |
-| types | Additional information about types of variables. |
-| blobs | Blob identifiers in `Template.component`. |
-| files | File identifiers in `Template.component`. |
-| substitutions | Substitutions to be made to create variables. |
-
-Query template component.
-
-```python
-# Example:
-# -------
-q = db['docs'].select().limit('<var:limit>')
-t = QueryTemplate('select_lim', template=q)
-t.variables
-# ['limit']
-```
+[Source code](https://github.com/superduper-io/superduper/blob/main/superduper/components/template.py)
 
 ## `Template` 
 
 ```python
 Template(self,
      identifier: str,
+     upstream: Optional[List[ForwardRef('Component')]] = None,
+     cache: Optional[bool] = True,
+     status: Optional[str] = None,
+     build_variables: Optional[Dict] = None,
+     build_template: str | None = None,
      db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
-     uuid: None = <factory>,
      *,
-     upstream: "t.Optional[t.List['Component']]" = None,
-     plugins: "t.Optional[t.List['Plugin']]" = None,
-     artifacts: 'dc.InitVar[t.Optional[t.Dict]]' = None,
-     cache: 't.Optional[bool]' = True,
-     status: 't.Optional[Status]' = None,
-     template: Union[Dict,
-     superduper.components.component.Component],
+     template: superduper.misc.typing.JSON,
      template_variables: Optional[List[str]] = None,
-     types: None = <factory>,
-     blobs: Optional[List[str]] = None,
-     files: Optional[List[str]] = None,
+     types: Optional[Dict] = None,
+     schema: Optional[Dict] = None,
+     blobs: Any = <factory>,
+     files: superduper.misc.typing.FDict = <factory>,
      substitutions: dataclasses.InitVar[typing.Optional[typing.Dict]] = None,
      requirements: Optional[List[str]] = None,
-     default_table: superduper.components.table.Table | None = None,
-     queries: Optional[List[ForwardRef('QueryTemplate')]] = None) -> None
+     default_tables: Optional[List[superduper.components.table.Table]] = None) -> None
 ```
 | Parameter | Description |
 |-----------|-------------|
-| identifier | Identifier of the leaf. |
-| db | Datalayer instance. |
-| uuid | UUID of the leaf. |
-| artifacts | A dictionary of artifacts paths and `DataType` objects |
-| upstream | A list of upstream components |
-| plugins | A list of plugins to be used in the component. |
+| identifier | Identifier of the instance. |
+| upstream | A list of upstream components. |
 | cache | (Optional) If set `true` the component will not be cached during primary job of the component i.e on a distributed cluster this component will be reloaded on every component task e.g model prediction. |
 | status | What part of the lifecycle the component is in. |
-| template | Template component with variables. |
-| template_variables | Variables to be set. |
-| types | Additional information about types of variables. |
-| blobs | Blob identifiers in `Template.component`. |
-| files | File identifiers in `Template.component`. |
-| substitutions | Substitutions to be made to create variables. |
+| build_variables | Variables which were supplied to a template to build. |
+| build_template | Template which was used to build. |
+| db | Datalayer instance. |
+| template | Template to be used. |
+| template_variables | Variables in the template. |
+| types | Types of variables in the template. |
+| schema | Schema of the template. |
+| blobs | Blobs to be saved with the template. |
+| files | Files to be staged with the template. |
+| substitutions | dict of substitutions to be made in the template. |
 | requirements | pip requirements for the template. |
-| default_table | Default table to be used with the template. |
-| queries | `QueryTemplate` instances to be used with the template. |
+| default_tables | Default table to be used with the template. |
 
 Application template component.
 

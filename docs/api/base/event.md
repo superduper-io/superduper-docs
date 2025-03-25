@@ -1,6 +1,6 @@
 **`superduper.base.event`** 
 
-[Source code](https://github.com/superduper/superduper/blob/main/superduper/base/event.py)
+[Source code](https://github.com/superduper-io/superduper/blob/main/superduper/base/event.py)
 
 ## `unpack_event` 
 
@@ -13,13 +13,20 @@ unpack_event(dict)
 
 Helper function to deserialize event into Event class.
 
+## `Event` 
+
+```python
+Event(self) -> None
+```
+Event dataclass to store event data.
+
 ## `Job` 
 
 ```python
 Job(self,
      *,
      context: str,
-     type_id: str,
+     component: str,
      identifier: str,
      uuid: str,
      args: Sequence[Any] = (),
@@ -33,7 +40,7 @@ Job(self,
 | Parameter | Description |
 |-----------|-------------|
 | context | context component for job creation |
-| type_id | type_id of component |
+| component | type of component |
 | identifier | identifier of component |
 | uuid | uuid of component |
 | args | arguments of method |
@@ -46,26 +53,21 @@ Job(self,
 
 Job event.
 
-## `Event` 
-
-```python
-Event(self) -> None
-```
-Event dataclass to store event data.
-
 ## `Create` 
 
 ```python
 Create(self,
      *,
      context: str,
-     component: Dict,
-     parent: str | None = None) -> None
+     path: str,
+     data: Dict,
+     parent: list | None = None) -> None
 ```
 | Parameter | Description |
 |-----------|-------------|
 | context | the component context of creation. |
-| component | the component to be created |
+| path | path of the component to be created |
+| data | the data of the component |
 | parent | the parent of the component (if any) |
 
 Class for component creation events.
@@ -84,6 +86,25 @@ Signal(self,
 | context | the context of component creation |
 
 Event used to send a signal to the scheduler.
+
+## `Update` 
+
+```python
+Update(self,
+     *,
+     context: str,
+     component: str,
+     data: Dict,
+     parent: list | None = None) -> None
+```
+| Parameter | Description |
+|-----------|-------------|
+| context | the component context of creation. |
+| component | the type of component to be created |
+| data | the component data to be created |
+| parent | the parent of the component (if any) |
+
+Update component event.
 
 ## `Change` 
 

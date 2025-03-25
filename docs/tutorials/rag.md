@@ -18,21 +18,27 @@ We'll add this to a testing database by downloading the data snapshot:
 ```python
 import json
 
-from superduper import superduper, Document
+from superduper import superduper
+from superduper.base import Base
+
 
 db = superduper('mongomock://test')
 
 with open('text.json') as f:
     data = json.load(f)
 
-_ = db['docu'].insert_many([{'txt': r} for r in data]).execute()
+
+class docu(Base):
+    txt: str
+
+_ = db.insert([docu(txt=txt) for txt in data])
 ```
 
 Let's verify the data in the `db` by querying one datapoint:
 
 
 ```python
-db['docu'].find_one().execute()
+db['docu'].get()
 ```
 
 The first step in a RAG application is to create a `VectorIndex`. The results of searching 
@@ -43,33 +49,22 @@ vector-search [here](./vector_search.md).
 
 
 ```python
-import requests 
+from superduper import VectorIndex, Listener
+from superduper_sentence_transformers.model import SentenceTransformer
 
-from superduper import Application, Document, VectorIndex, Listener, vector
-from superduper.ext.sentence_transformers.model import SentenceTransformer
-from superduper.base.code import Code
-
-def postprocess(x):
-    return x.tolist()
-
-datatype = vector(shape=384, identifier="my-vec")
     
 model = SentenceTransformer(
     identifier="my-embedding",
-    datatype=datatype,
-    predict_kwargs={"show_progress_bar": True},
-    signature="*args,**kwargs",
     model="all-MiniLM-L6-v2",      
     device="cpu",
-    postprocess=Code.from_object(postprocess),
+    datatype='vector[float32:384]',
 )
 
 listener = Listener(
     identifier="my-listener",
     model=model,
     key='txt',
-    select=db['docu'].find(),
-    predict_kwargs={'max_chunk_size': 50},
+    select=db['docu'],
 )
 
 vector_index = VectorIndex(
@@ -78,7 +73,7 @@ vector_index = VectorIndex(
     measure="cosine"
 )
 
-db.apply(vector_index)
+db.apply(vector_index, force=True)
 ```
 
 Now that we've set up a `VectorIndex`, we can connect this index with an LLM in a number of ways.
@@ -94,22 +89,22 @@ native integrations (see [here](../ai_integraitons/)) but you can also [bring yo
 
 
 ```python
-from superduper.ext.llm.prompter import *
+from superduper.components.llm.prompter import *
 from superduper import Document
 from superduper.components.model import SequentialModel
-from superduper.ext.openai import OpenAIChatCompletion
+from superduper_openai import OpenAIChatCompletion
 
-q = db['docu'].like(Document({'txt': '<var:prompt>'}), vector_index='my-index', n=5).find().limit(10)
+q = db['docu'].like({'txt': '<var:prompt>'}, vector_index='my-index', n=10).select()
 
 def get_output(c):
     return [r['txt'] for r in c]
 
-prompt_template = RetrievalPrompt('my-prompt', select=q, postprocess=Code.from_object(get_output))
+prompt_template = RetrievalPrompt('my-prompt', select=q, postprocess=get_output)
 
 llm = OpenAIChatCompletion('gpt-3.5-turbo')
 seq = SequentialModel('rag', models=[prompt_template, llm])
 
-db.apply(seq)
+db.apply(seq, force=True)
 ```
 
 Now we can test the `SequentialModel` with a sample question:
@@ -123,37 +118,3 @@ seq.predict('Tell be about vector-indexes')
 Did you know you can use any tools from the Python ecosystem with Superduper.
 That includes `langchain` and `llamaindex` which can be very useful for RAG applications.
 :::
-
-
-```python
-from superduper import Application
-
-app = Application('rag-app', components=[vector_index, seq, plugin_1, plugin_2])
-```
-
-
-```python
-app.encode()
-```
-
-
-```python
-app.export('rag-app')
-```
-
-
-```python
-!cat rag-app/requirements.txt
-```
-
-
-```python
-from superduper import *
-
-app = Component.read('rag-app')
-```
-
-
-```python
-app.info()
-```

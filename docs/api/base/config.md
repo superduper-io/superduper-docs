@@ -1,6 +1,6 @@
 **`superduper.base.config`** 
 
-[Source code](https://github.com/superduper/superduper/blob/main/superduper/base/config.py)
+[Source code](https://github.com/superduper-io/superduper/blob/main/superduper/base/config.py)
 
 ## `BaseConfig` 
 
@@ -18,50 +18,62 @@ with a dictionary of parameters.
 Config(self,
      envs: dataclasses.InitVar[typing.Optional[typing.Dict[str,
      str]]] = None,
-     data_backend: str = 'mongodb://mongodb:27017/test_db',
-     lance_home: str = '.superduper/vector_indices',
-     artifact_store: Optional[str] = None,
+     data_backend: str = 'mongodb://localhost:27017/test_db',
+     secrets_volume: str = '/session/secrets',
+     artifact_store: str = 'filesystem://./artifact_store',
      metadata_store: Optional[str] = None,
+     cache: str = 'in-process',
      vector_search_engine: str = 'local',
      cluster_engine: str = 'local',
      retries: superduper.base.config.Retry = <factory>,
      downloads: superduper.base.config.Downloads = <factory>,
-     fold_probability: float = 0.05,
      log_level: superduper.base.config.LogLevel = <LogLevel.INFO: 'INFO'>,
      logging_type: superduper.base.config.LogType = <LogType.SYSTEM: 'SYSTEM'>,
      log_colorize: bool = True,
+     bytes_encoding: str = 'bytes',
      force_apply: bool = False,
-     bytes_encoding: superduper.base.config.BytesEncoding = <BytesEncoding.BYTES: 'bytes'>,
-     auto_schema: bool = True,
+     datatype_presets: superduper.base.config.DataTypePresets = <factory>,
      json_native: bool = True,
      output_prefix: str = '_outputs__',
-     vector_search_kwargs: Dict = <factory>,
-     rest: superduper.base.config.RestConfig = <factory>) -> None
+     vector_search_kwargs: Dict = <factory>) -> None
 ```
 | Parameter | Description |
 |-----------|-------------|
 | envs | The envs datas |
 | data_backend | The URI for the data backend |
-| lance_home | The home directory for the Lance vector indices, Default: .superduper/vector_indices |
+| secrets_volume | The secrets volume mount for secrets env vars. |
 | artifact_store | The URI for the artifact store |
 | metadata_store | The URI for the metadata store |
+| cache | A URI for an in-memory cache |
 | vector_search_engine | The engine to use for vector search |
 | cluster_engine | The engine to use for operating a distributed cluster |
 | retries | Settings for retrying failed operations |
 | downloads | Settings for downloading files |
-| fold_probability | The probability of validation fold |
 | log_level | The severity level of the logs |
 | logging_type | The type of logging to use |
 | force_apply | Whether to force apply the configuration |
-| bytes_encoding | The encoding of bytes in the data backend |
-| auto_schema | Whether to automatically create the schema. If True, the schema will be created if it does not exist. |
+| datatype_presets | Presets to be applied for default types of data |
 | json_native | Whether the databackend supports json natively or not. |
 | log_colorize | Whether to colorize the logs |
+| bytes_encoding | (Deprecated) |
 | output_prefix | The prefix for the output table and output field key |
 | vector_search_kwargs | The keyword arguments to pass to the vector search |
-| rest | Settings for rest server. |
 
 The data class containing all configurable superduper values.
+
+## `DataTypePresets` 
+
+```python
+DataTypePresets(self,
+     vector: str | None = None) -> None
+```
+| Parameter | Description |
+|-----------|-------------|
+| vector | BaseDataType to encode vectors. |
+
+Paths of default types of data.
+
+Overrides DataBackend.datatype_presets.
 
 ## `Downloads` 
 
@@ -80,20 +92,6 @@ Downloads(self,
 | timeout | The timeout for downloading |
 
 Describes the configuration for downloading files.
-
-## `RestConfig` 
-
-```python
-RestConfig(self,
-     uri: str = 'localhost:8000',
-     config: Optional[str] = None) -> None
-```
-| Parameter | Description |
-|-----------|-------------|
-| uri | Rest server uri. |
-| config | Path configuration file. |
-
-Configuratin for basic rest server.
 
 ## `Retry` 
 

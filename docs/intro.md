@@ -6,17 +6,78 @@ description: Find detailed technical documentation for Superduper's AI and datab
   <title>Docs - Superduper</title>
 </head>
 
-# Superduper: framework for building AI-data applications and workflows on databases.
+# Superduper: framework for building custom AI applications and agents.
 
-Superduper is a Python based framework for building **end-2-end AI-data workflows and applications** on your own data, integrating with major databases. It supports the latest technologies and techniques, including LLMs, vector-search, RAG, multimodality as well as classical AI and ML paradigms.
+Superduper is a Python based framework for building **end-2-end AI-data applications and agents**, on your own data, integrating with major databases. It supports the latest technologies and techniques in generative and classical AI and machine learning.
 
-Developers may leverage Superduper by building **compositional and declarative objects** which out-source the details of deployment, orchestration and versioning to Superduper. This allows developers to completely avoid implementing MLOps, ETL pipelines, model deployment, data migration and synchronization.
+Developers may leverage Superduper by building **compositional and declarative objects** which out-source the details of deployment, orchestration and versioning to Superduper. This allows developers to completely avoid implementing costly boilerplate, MLOps, data migration and synchronization.
 
 Concretely, developers may:
 
-- Create AI-applications using a persisted data state, corresponding to computations involving AI models and APIs.
-- Build multi-step computations, triggers and actions
-- Parametrize these AI-applications as reusable units of portable functionality, known as "templates"
+- Create AI-agents and applications using a persisted data state, corresponding to computations involving AI models and APIs.
+- Build multi-step computations, triggers and actions.
+- Parametrize these AI-agents and applications as reusable units of portable functionality, known as "templates".
+- Connect these computations and triggers with AI-agents, to create applications closely connected to in-house data.
+
+## How does Superduper relate to agents?
+
+The base classes in Superduper, have *prima facie* nothing explicitly to do with AI agents. Stripped down to its bare essentials, 
+Superduper is a way to define schemas in your connected data-backend, and to associate functionality with each row of data in those tables,
+and to trigger functionality dependent on the content of those rows. 
+
+From that point-of-view, the connection to Agents may be not immediately clear. ***However***, when one considers that serious agents
+need to interact with data, in order to inform their outputs and tasks, and also, need a place to specify and save their state, the connection becomes absolutely necessary. 
+
+Take the example of an agent which is used for event scheduling. The agent might, in one instance, need to be integrated with data:
+
+- A table of events with descriptions and optional date
+- A table of potential stakeholders
+
+The agent might, correspondingly have 2 modules:
+
+- Grabbing yet to be scheduled events which are added to the system
+- Predicting which stakeholders should attend the event
+- A chat functionality to converse about upcoming events
+
+Technically speaking this means building several interconnected modules:
+
+- A module to lister to the events table for new events
+- A module to match new events to stakeholders
+- A module to suggest appropriate times for each meeting, given the stakeholders
+- A module which understands human feedback and which has access to the tables with scheduling
+
+From this setup, it's clear that an appropriate agent isn't simply an interface which can answer
+your questions, and maybe react to your inputs with some task execution. Rather, the correct agent 
+implementation should have access to a database, listen for incoming data, flexibly compute outputs
+on this data, taking into account appropriate tables in the database, and comprise a chat interface 
+which connects these modules with the human operator.
+
+## How does Superduper enable sophisticated agents
+
+Agents which interact with data, as in the above example, are highly complex to implement. If done properly, they require:
+
+- Maintaining a highly intricate state
+- Integrating with production data in databases
+- Deploying, connecting to, and maintaining many endpoints
+- Taking care of the life-cycle of AI models:
+  - Feature computations
+  - Training and re-training
+  - Computation and caching of outputs
+- A range of infrastructual work, from deploying custom hardware, triggering auto-scaling,
+  to deploying specialized solutions such as vector-search engines, model repositories and more
+- A highly demanding to implement versioning system
+
+What if none of this was necessary? What if AI engineers, data-scientist and decision makers, 
+could simply "apply" AI to the data in their data deployments? For example, the framework would simply require:
+
+```python
+db.apply(agent)
+```
+
+This framework is `superduper`.
+
+
+## Four characteristic steps
 
 Superduper involves 4 characteristic phases, summarized as "**CAPE**": **connect** to data, **apply** arbitrary AI to that data, **package** and reuse the application on arbitrary data, and **execute** AI-database queries and predictions on the resulting AI outputs and data.
 
@@ -34,71 +95,39 @@ db = superduper('mongodb|postgres|mysql|sqlite|duckdb|snowflake://<your-db-uri>'
 **Apply**
 
 ```python
-listener = MyLLM('self_hosted_llm', architecture='llama-3.2', postprocess=my_postprocess).to_listener('documents', key='txt')
-db.apply(listener)
+from superduper import Component
+
+# build your MyAgent class with superduper and other best-in-class frameworks 
+class MyAgent(Component):
+    param_1: str
+    param_2: int
+    ...
+
+    def execute(self, task: str):
+        ...
+
+agent = MyAgent('agent', param_1='Your task is to solve problems', param_2=20)
+db.apply(agent)
 ```
 
 **Package**
 
 ```python
-application = Application('my-analysis-app', components=[listener, vector_index])
-template = Template('my-analysis', component=app, substitutions={'documents': 'table'})
+application = Application('my-agent-app', components=[agent, vector_index])
+template = Template('my-agent-template', component=app, substitutions={'documents': 'table'})
 template.export('my-analysis')
 ```
 
 **Execute**
 
 ```python
-query = db['documents'].like({'txt', 'Tell me about Superduper'}, vector_index='my-index').select()
-query.execute()
-```
-
-:::info
-An **AI-data** application is a new generation of application involving cross talk between AI models and data, which is updated 
-dynamically in response to changing data, and supports a range of data queries, including queries involving AI model inferences.
-
-Basic examples include:
-
-- *Retrieval augmented generation*
-- *Data dependent retraining protocols*
-- *Semantic multimodal product search with text, image and product JSON formats.*
-
-There is a whole world of AI-data applications out there waiting to be built.
-Superduper is the perfect framework with which to get started!
-:::
-
-## What problem does Superduper solve?
-
-AI-data applications are highly complex. They require:
-
-- Maintaining a highly intricate state
-- Integrating with production data in databases
-- Deploying and maintaining many endpoints
-- Taking care of the life-cycle of AI models:
-  - Feature computations
-  - Training and re-training
-  - Computation and caching of outputs
-- A range of infrastructual work, from deploying custom hardware, triggering auto-scaling,
-  to deploying specialized solutions such as vector-search engines, model repositories and more
-
-The fact that all of this is necessary explains the existence of the MLOPs, AIOps, LLMOps fields of engineering.
-
-What if none of this was necessary? What if AI engineers, data-scientist and decision makers, 
-could simply "apply" AI to the data in their data deployments? For example, the framework required would allow this type of command:
-
-```python
-<framework> apply ./path_to_app.zip your://database-uri
-```
-
-That "framework" is `superduper`:
-
-```python
-superduper apply ./path_to_app.zip your://database-uri
+agent = db.load('MyAgent', 'agent')
+agent.execute('Research me a holiday to Mars, and book if possible.')
 ```
 
 ## How does Superduper work?
 
-Superduper is an AI-data application builder which is:
+Superduper is an AI- application and agent builder which is:
 
 - declarative 
 - composable
@@ -109,7 +138,7 @@ Superduper's main building block is class called a `Component`, which allows dev
 to build applications which "declare" the state they want the system to reach:
 
 - Which outputs should be kept up-to-date with which database input queries?
-- Which models should be deployed as endpoints?
+- Which models should be deployed?
 - Which models should be fine-tuned on which data prior to use?
 - Which outputs should be synchronized as vector-indexes?
 - Which computations should be run on a schedule?
@@ -166,12 +195,9 @@ of its philosophy and community ethos.
 - MongoDB
 - PostgreSQL
 - SQLite
-- Snowflake
+- Redis
 - MySQL
-- Oracle
-- MSSQL
-- Clickhouse
-- Pandas
+- Snowflake
 
 #### AI frameworks
 

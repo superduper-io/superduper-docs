@@ -1,10 +1,10 @@
+<!-- Auto-generated content start -->
 # Snowflake
 
 ## Installation
 
 ```bash
-pip install superduper_ibis
-pip install snowflake-sqlalchemy
+pip install superduper_snowflake
 ```
 
 ## API

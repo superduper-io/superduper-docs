@@ -1,6 +1,6 @@
 **`superduper.base.config_dicts`** 
 
-[Source code](https://github.com/superduper/superduper/blob/main/superduper/base/config_dicts.py)
+[Source code](https://github.com/superduper-io/superduper/blob/main/superduper/base/config_dicts.py)
 
 ## `combine_configs` 
 

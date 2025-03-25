@@ -1,6 +1,6 @@
 **`superduper.backends.base.vector_search`** 
 
-[Source code](https://github.com/superduper/superduper/blob/main/superduper/backends/base/vector_search.py)
+[Source code](https://github.com/superduper-io/superduper/blob/main/superduper/backends/base/vector_search.py)
 
 ## `cosine` 
 
@@ -52,15 +52,15 @@ Base vector-search backend.
 
 ```python
 BaseVectorSearcher(self,
-     uuid: str,
+     identifier: str,
      dimensions: int,
      measure: str)
 ```
 | Parameter | Description |
 |-----------|-------------|
-| uuid | Unique string identifier of index |
-| dimensions | Dimension of the vector embeddings |
-| measure | measure to assess similarity |
+| identifier | Unique string identifier of index. |
+| dimensions | Number of dimensions of the vectors. |
+| measure | Measure type of the vectors. |
 
 Base class for vector searchers.
 

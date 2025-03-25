@@ -1,6 +1,6 @@
 **`superduper.base.exceptions`** 
 
-[Source code](https://github.com/superduper/superduper/blob/main/superduper/base/exceptions.py)
+[Source code](https://github.com/superduper-io/superduper/blob/main/superduper/base/exceptions.py)
 
 ## `BaseException` 
 
@@ -13,18 +13,6 @@ BaseException(self,
 | msg | msg for Exception |
 
 BaseException which logs a message after exception.
-
-## `ComponentException` 
-
-```python
-ComponentException(self,
-     msg)
-```
-| Parameter | Description |
-|-----------|-------------|
-| msg | msg for BaseException |
-
-ComponentException.
 
 ## `ComponentInUseError` 
 
@@ -41,86 +29,17 @@ ComponentInUseError(self,
 
 Exception raised when a component is already in use.
 
-## `ComponentInUseWarning` 
+## `MissingSecretsException` 
 
 ```python
-ComponentInUseWarning(self,
-     /,
-     *args,
-     **kwargs)
-```
-| Parameter | Description |
-|-----------|-------------|
-| args | *args for Exception |
-| kwargs | **kwargs for Exception |
-
-Warning raised when a component is already in use.
-
-## `DatabackendException` 
-
-```python
-DatabackendException(self,
+MissingSecretsException(self,
      msg)
 ```
 | Parameter | Description |
 |-----------|-------------|
 | msg | msg for BaseException |
 
-DatabackendException.
-
-## `MetadataException` 
-
-```python
-MetadataException(self,
-     msg)
-```
-| Parameter | Description |
-|-----------|-------------|
-| msg | msg for BaseException |
-
-MetadataException.
-
-## `QueryException` 
-
-```python
-QueryException(self,
-     msg)
-```
-| Parameter | Description |
-|-----------|-------------|
-| msg | msg for BaseException |
-
-QueryException.
-
-## `RequiredPackageVersionsNotFound` 
-
-```python
-RequiredPackageVersionsNotFound(self,
-     /,
-     *args,
-     **kwargs)
-```
-| Parameter | Description |
-|-----------|-------------|
-| args | *args for ImportError |
-| kwargs | **kwargs for ImportError |
-
-Exception raised when one or more required packages are not found.
-
-## `RequiredPackageVersionsWarning` 
-
-```python
-RequiredPackageVersionsWarning(self,
-     /,
-     *args,
-     **kwargs)
-```
-| Parameter | Description |
-|-----------|-------------|
-| args | *args for ImportWarning |
-| kwargs | **kwargs for ImportWarning |
-
-Exception raised when one or more required packages are not found.
+Missing secrets.
 
 ## `ServiceRequestException` 
 
@@ -132,7 +51,7 @@ ServiceRequestException(self,
 |-----------|-------------|
 | msg | msg for BaseException |
 
-ServiceRequestException.
+Service request exception.
 
 ## `TableNotFoundError` 
 
