@@ -7,7 +7,7 @@
 (Learn how to build a `Model` [here](model))
 
 ```python
-from superduper.ext.<extension> import <ExtensionTrainer>
+from superduper_<plugin> import <ExtensionTrainer>
 
 trainer = <ExtensionTrainer>(
     'my-trainer',

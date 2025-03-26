@@ -1,38 +1,31 @@
 # Execute
 
-`db.execute` is superduper's wrapper around standard database queries:
+`superduper` allows developers to build their functionality on document-stores as well as SQL databases. 
+To enable portability, it includes it's own simple query abstraction, which wraps the `db.databackend` native queries.
+Queries are built using a compositional syntax similar to that used by `pandas` and `ibis`. The API also includes extensions of this paradigm to cover vector-searches.
+
+`superduper` supports:
 
 - Inserts
 - Selects
 - Updates
 - Deletes
 
-As well as model predictions:
-
-- Prediction on single data points (streaming)
-- Predictions on multiple data points (batch prediction)
-
-And also queries which consist of a combination of model computations and data operations:
+In addition hybrid queries involving a combination of vector-search and filtering are supported:
 
 - Vector-search queries
-- Complex model predictions which include database queries (e.g. "RAG")
-
-Standard database queries are built using a compositional syntax similar to that found in Python database clients 
-such as `pymongo` and `ibis`. The API also includes extensions of this paradigm to cover model predictions
-and vector-searches.
-
-Read more about the differences and approaches to document stores/ SQL data-backends [here](docs/data_integrations).
-
-## Building queries/ predictions
-
-All queries consist of a "chain" of methods executed over a base object. The base object 
-can refer to a table/ collection or a model:
-
-```python
-q = base_object.method_1(*args_1, **kwargs_1).method_2(*args_2, **kwargs_2)....
-```
 
 ### Selects
+
+All select queries consist of a "chain" of methods executed over a base table.
+
+```python
+q = db['<table_name>'].method_1(*args_1, **kwargs_1).method_2(*args_2, **kwargs_2)....
+```
+
+Select queries can be passed around as objects, and are lazily executed with `.execute()` and `.get(...)`.
+They play a role in certain `Component` implementations such as `Listener` and `VectorIndex`. Developers
+may incorporate select queries as associated data in their own custom `Component` implementations.
 
 ***Table select***
 
@@ -69,6 +62,7 @@ data = t.filter(t['x'] > 2).select('x', 'y').execute()
 ```python
 listener_1 = db.load('Listener', '<listener_1>')
 listener_2 = db.load('Listener', '<listener_2>')
+
 joined_outputs_1 = db['<table>'].outputs(listener_1.predict_id).execute()
 joined_both_outputs = db['<table>'].outputs(listener_1.predict_id, listener_2.predict_id).execute()
 ```
@@ -76,64 +70,127 @@ joined_both_outputs = db['<table>'].outputs(listener_1.predict_id, listener_2.pr
 ***Get the ids of a query***
 
 ```python
-query = db['<table'>]   # Any select
-ids = query.ids()
+ids = query.ids()   # Any select query
 ```
 
 ***Get the distinct values of a column***
 
 ```python
-query = db['<table'>]   # Any select q
-distinct_x = query.distinct('x')
+distinct_x = query.distinct('x')   # Any select query
 ```
 
-***MongoDB***
-
-A MongoDB `find` query can be built like this:
+***Restrict the range of a query to certain primary ids***
 
 ```python
-q = db['collection'].find().limit(5).skip(2)
+data = query.subset(ids)
 ```
 
-***SQL***
+### Vector search
 
-A query with on an SQL data-backend can be built with `ibis` syntax like this:
+***Vanilla vector-search***
 
 ```python
-q = db['documents'].filter(t.brand == 'Nike').limit(5)
+db['<table_name>'].like({'<key>': <value>}, vector_index='<vector_index>', n=<n>).execute()
 ```
 
-### Inserts
-
-***MongoDB***
-
-Typically insert queries wrap `Document` instances and call the `insert` method on a table or collection:
+***Pre-filtered***
 
 ```python
-q = db['documents'].insert_many([Document(r) for r in data])
+t = db['<table_name>']
+condition = t['<key>'] == <value>   # ==, <=, >=
+
+t.filter(condition).like({'<key>': <value>}, vector_index='<vector_index>', n=<n>).execute()
 ```
 
-***SQL***
-
-The `ibis` insert is slightly different:
+***Post-filtered***
 
 ```python
-q = db['documents'].insert([Document(r) for r in data])
+t.like({'<key>': <value>}, vector_index='<vector_index>', n=<n>).filter(condition).execute()
 ```
 
-## Executing the query
+### Insert
 
+`superduper` supports inserting data which is a combination of JSON-native content, 
+and objects which need to be serialized as `bytes` using a Python based serialized (e.g. 
+`pickle`, `dill` or a custom serializer).
+
+`superduper` has a typing system which is un-pedantic, doing the minimum necessary 
+to get content saved in the `db.databackend`.
+
+Inserting data is possible in two ways, either by creating a table with typed fields, 
+or by created a `superduper.base.Base` class with type annotations:
+
+***Available datatypes***
+
+| Name | Description | 
+| --- | --- |
+| `str` | Python string |
+| `int` | Python integer |
+| `float` | Python float |
+| `bool` | Python boolean |
+| `json` | JSON-able objects (`list`, `dict`) |
+| `dillencoder` | Save content in `db.databackend` base64 encoded |
+| `dill` | Save content as bytes in `db.artifact_store` |
+| `file` | Save reference as a file in `db.artifact_store` |
+| `package.module.variable_name` | Custom datatype implementing `superduper.base.datatype.BaseDatatype` |
+| `basetype` | Indicates a `superduper.base.Base` class |
+| `componenttype` | Indicates a `superduper.components.component.Component` type |
+| `componentdict` | A dictionary `str -> Component` |
+| `componentlist` | A list of `Component` |
+| `vector[float:32]` | A searchable `numpy.array` with datatype and shape |
+
+***Create a `Table` with typed columns***
+
+Example data:
 
 ```python
-results = q.execute()
+import PIL.Image
+
+data = [
+    {'x': 'test', 'y': 1, 'z': PIL.Image.open('my_image_1.png')},
+    {'x': 'test', 'y': 2, 'z': PIL.Image.open('my_image_2.png')}
+]
 ```
 
-***Multiple results***
+```python
+db.apply(
+    Table(
+        'documents',
+        fields={'x': 'str', 'y': 'int', 'z': 'dill'}
+    )
+)
 
-Iterables of results are sent wrapped in a cursor
+q = db['documents'].insert(data)
+```
 
-***Indiviudal results***
+***Create an implicit `Table` and typed columns with a `Base` subclass***
 
-Individual results are sent wrapped in a `Document`
+```python
+from superduper.base.Base
 
-Read more about `.execute` [here](../execute_api/overview).
+class documents(Base):
+    x: str
+    y: int
+    z: t.Any
+
+db.insert(
+    documents(x=r['x'], y=r['y'], z=r['z'])
+    for r in data
+)
+```
+
+### Update
+
+Update the table where the values in `kwargs` apply:
+
+```python
+db['<table_name>'].update(**kwargs)
+```
+
+### Delete
+
+Delete rows from the table where the values in `kwargs` apply:
+
+```python
+db['<table_name>'].delete(**kwargs)
+```

@@ -1,7 +1,5 @@
 # Getting started
 
-![](https://www.youtube.com/watch?v=9rA0dGmK2-s)
-
 ## Installation
 
 If you plan to install Superduper, you'll need at least:

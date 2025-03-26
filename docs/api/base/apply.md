@@ -10,7 +10,8 @@ apply(db: 'Datalayer',
      Sequence[Any],
      Any],
      force: bool | None = None,
-     wait: bool = False) -> 'Component'
+     wait: bool = False,
+     jobs: bool = True) -> 'Component'
 ```
 | Parameter | Description |
 |-----------|-------------|
@@ -18,6 +19,7 @@ apply(db: 'Datalayer',
 | object | Object to be stored. |
 | force | List of jobs which should execute before component initialization begins. |
 | wait | Blocks execution till create events finish. |
+| jobs | Whether to execute jobs or not. |
 
 Add functionality in the form of components.
 

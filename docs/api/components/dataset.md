@@ -8,10 +8,6 @@
 Dataset(self,
      identifier: str,
      upstream: Optional[List[ForwardRef('Component')]] = None,
-     cache: Optional[bool] = True,
-     status: Optional[str] = None,
-     build_variables: Optional[Dict] = None,
-     build_template: str | None = None,
      db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
      *,
      select: 't.Optional[Query]' = None,
@@ -26,11 +22,7 @@ Dataset(self,
 |-----------|-------------|
 | identifier | Identifier of the instance. |
 | upstream | A list of upstream components. |
-| cache | (Optional) If set `true` the component will not be cached during primary job of the component i.e on a distributed cluster this component will be reloaded on every component task e.g model prediction. |
-| status | What part of the lifecycle the component is in. |
-| build_variables | Variables which were supplied to a template to build. |
-| build_template | Template which was used to build. |
-| db | Datalayer instance. |
+| db | Datalayer instance. Datalayer instance. |
 | select | A query to select the documents for the dataset. |
 | sample_size | The number of documents to sample from the query. |
 | random_seed | The random seed to use for sampling. |
@@ -47,10 +39,6 @@ A dataset is an immutable collection of documents.
 Data(self,
      identifier: str,
      upstream: Optional[List[ForwardRef('Component')]] = None,
-     cache: Optional[bool] = True,
-     status: Optional[str] = None,
-     build_variables: Optional[Dict] = None,
-     build_template: str | None = None,
      db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
      *,
      raw_data: 't.Any') -> None
@@ -59,11 +47,7 @@ Data(self,
 |-----------|-------------|
 | identifier | Identifier of the instance. |
 | upstream | A list of upstream components. |
-| cache | (Optional) If set `true` the component will not be cached during primary job of the component i.e on a distributed cluster this component will be reloaded on every component task e.g model prediction. |
-| status | What part of the lifecycle the component is in. |
-| build_variables | Variables which were supplied to a template to build. |
-| build_template | Template which was used to build. |
-| db | Datalayer instance. |
+| db | Datalayer instance. Datalayer instance. |
 | raw_data | The raw data. |
 
 Class to store data.
@@ -74,10 +58,6 @@ Class to store data.
 RemoteData(self,
      identifier: str,
      upstream: Optional[List[ForwardRef('Component')]] = None,
-     cache: Optional[bool] = True,
-     status: Optional[str] = None,
-     build_variables: Optional[Dict] = None,
-     build_template: str | None = None,
      db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
      *,
      getter: 't.Callable') -> None
@@ -86,11 +66,7 @@ RemoteData(self,
 |-----------|-------------|
 | identifier | Identifier of the instance. |
 | upstream | A list of upstream components. |
-| cache | (Optional) If set `true` the component will not be cached during primary job of the component i.e on a distributed cluster this component will be reloaded on every component task e.g model prediction. |
-| status | What part of the lifecycle the component is in. |
-| build_variables | Variables which were supplied to a template to build. |
-| build_template | Template which was used to build. |
-| db | Datalayer instance. |
+| db | Datalayer instance. Datalayer instance. |
 | getter | Function to fetch data. |
 
 Class to fetch dataset from remote.

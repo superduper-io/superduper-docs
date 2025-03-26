@@ -19,9 +19,6 @@ vi = VectorIndex(
     indexing_listener=listener_1  # defined earlier calculates searchable vectors
 )
 
-# or directly from a model
-vi = model_1.to_vector_index(select=q, key='x')
-
 # or may use multiple listeners
 vi = VectorIndex(
     'my-index',

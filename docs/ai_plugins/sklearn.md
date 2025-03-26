@@ -1,5 +1,5 @@
 <!-- Auto-generated content start -->
-# superduper_sklearn
+# `superduper_sklearn`
 
 superduper allows users to work with arbitrary sklearn estimators, with additional support for pre-, post-processing and input/ output data-types.
 

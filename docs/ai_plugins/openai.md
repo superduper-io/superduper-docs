@@ -1,5 +1,5 @@
 <!-- Auto-generated content start -->
-# superduper_openai
+# `superduper_openai`
 
 Superduper allows users to work with openai API models.
 

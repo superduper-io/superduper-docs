@@ -63,10 +63,10 @@ recursive_update(data,
 
 Recursively update data with a replace function.
 
-## `MongoStyleDict` 
+## `DeepKeyedDict` 
 
 ```python
-MongoStyleDict(self,
+DeepKeyedDict(self,
      /,
      *args,
      **kwargs)

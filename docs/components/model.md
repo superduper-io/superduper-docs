@@ -45,19 +45,6 @@ m = ObjectModel(
 db.apply(m)
 ```
 
-**`QueryModel`**
-
-Use a `superduper` query to extract data from `db`
-
-```python
-from superduper.components.model import QueryModel
-
-query = ... # build a select query
-m = QueryModel('my-query', select=query, key='<key-to-extract>')
-
-db.apply(m)
-```
-
 **`APIModel`**
 
 Request model outputs hosted behind an API:

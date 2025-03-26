@@ -17,15 +17,11 @@ from superduper import Listener
 m = ...  # build a model
 q = ... # build a select query
 
-# either...
 listener = Listener(
-    mode=m,
+    model=m,
     select=q,
     key='x',
 )
-
-# or...
-listener = m.to_listener(select=q, key='x')
 
 db.apply(listener)
 ```

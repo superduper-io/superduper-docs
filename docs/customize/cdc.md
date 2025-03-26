@@ -27,15 +27,15 @@ on the inserted `ids`:
 ```python
 >>> downloader = Downloader('my-downloader', cdc_table='docs')
 >>> db.apply(downloader)
->>> db['docs'].insert([{'url': 'http://me.com/image1.png'}]).execute()
+>>> db['docs'].insert([{'url': 'http://me.com/image1.png'}])
 ... # `image1.png` is saved to file
 ```
 
 :::note
-[Superduper enterprise](https://superduper.io/) supports
+The [Superduper Agents](https://superduper.io/) platform supports
 change-data-capture in such a way that data does 
 not need to be inserted with the Superduper client.
 
 This is advantageous in bigger teams, and when 
-developers are working with a variety of data-sources.
+developers are working with a variety of data-sources and programming languages.
 :::

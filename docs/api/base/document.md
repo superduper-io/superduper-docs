@@ -18,7 +18,7 @@ Document(self,
 | db | The datalayer to use. |
 | kwargs | **kwargs for `dict` |
 
-A wrapper around an instance of dict or a Encodable.
+A wrapper around a `dict` including a schema and encoding.
 
 The document data is used to dump that resource to
 a mix of json-able content, ids and `bytes`

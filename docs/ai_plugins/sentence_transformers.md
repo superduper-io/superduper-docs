@@ -1,5 +1,5 @@
 <!-- Auto-generated content start -->
-# superduper_sentence_transformers
+# `superduper_sentence_transformers`
 
 superduper allows users to work with self-hosted embedding models via [Sentence-Transformers](https://sbert.net).
 

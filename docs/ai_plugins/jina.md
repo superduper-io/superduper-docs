@@ -1,5 +1,5 @@
 <!-- Auto-generated content start -->
-# superduper_jina
+# `superduper_jina`
 
 Superduper allows users to work with Jina Embeddings models through the Jina Embedding API.
 

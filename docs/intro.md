@@ -162,7 +162,7 @@ This layer is composed of several important components, encompassing primary dat
 
 ## Superduper is open-sourced in Python under the Apache 2.0 license
 
-We want to make Superduper the most inclusive and flexible AI-data framework around.
+We want to make Superduper the most inclusive and flexible AI-agents and applications framework around.
 
 :::note
 Superduper is licensed under the Apache 2.0 license as a key cornerstone 

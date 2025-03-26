@@ -33,7 +33,17 @@ template = Template(
 
 ***Execute***
 
+Execute a query:
+
 ```python
-to_execute = <build_your_database_query_or_model_prediction>
-db.execute(to_execute)
+query = db['table'].filter(...) # .select(...) | .outputs(...) | .like(...)
+results = query.execute()
+```
+
+Use an installed `Component`:
+
+```python
+component = db.load('<component>', '<identifier>')
+
+component.<method>(*args, **kwargs)
 ```

@@ -28,7 +28,7 @@ class MyCronJob(CronJob):
         # for example, backing up a collection every day
         os.system(f'aws s3 cp {date}.bak s3://my-bucket/{date}.bak')
 
-cron_job = MyCronJob(table='documents', schedule='0 0 * * * *')
+cron_job = MyCronJob('my_cron', table='documents', schedule='0 0 * * * *')
 
 db.apply(cron_job)
 ```

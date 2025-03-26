@@ -11,31 +11,22 @@ init_decorator(func)
 |-----------|-------------|
 | func | init function. |
 
-Decorator to set _is_initialized to True after init method is called.
+Decorator to set _is_setup to `True` after init method is called.
 
-## `model` 
+## `method_wrapper` 
 
 ```python
-model(item: 't.Optional[t.Callable]' = None,
-     identifier: 't.Optional[str]' = None,
-     datatype=None,
-     model_update_kwargs: 't.Optional[t.Dict]' = None,
-     output_schema: 't.Optional[Schema]' = None,
-     num_workers: 'int' = 0)
+method_wrapper(method,
+     item,
+     signature: 'str')
 ```
 | Parameter | Description |
 |-----------|-------------|
-| item | Callable to wrap with `ObjectModel`. |
-| identifier | Identifier for the `ObjectModel`. |
-| datatype | Datatype for the model outputs. |
-| model_update_kwargs | Dictionary to define update kwargs. |
-| output_schema | Schema for the model outputs. |
-| num_workers | Number of workers to use for parallel processing |
+| method | Method to execute. |
+| item | Item to wrap. |
+| signature | Signature of the method. |
 
-Decorator to wrap a function with `ObjectModel`.
-
-When a function is wrapped with this decorator,
-the function comes out as an `ObjectModel`.
+Wrap the item with the model.
 
 ## `serve` 
 
@@ -48,20 +39,56 @@ serve(f)
 
 Decorator to serve the model on the associated cluster.
 
+## `APIBaseModel` 
+
+```python
+APIBaseModel(self,
+     identifier: str,
+     upstream: Optional[List[ForwardRef('Component')]] = None,
+     db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
+     *,
+     datatype: 'str | None' = None,
+     model_update_kwargs: 't.Dict' = <factory>,
+     predict_kwargs: 't.Dict' = <factory>,
+     compute_kwargs: 't.Dict' = <factory>,
+     validation: 't.Optional[Validation]' = None,
+     metric_values: 't.Dict' = <factory>,
+     num_workers: 'int' = 0,
+     serve: 'bool' = False,
+     trainer: 't.Optional[Trainer]' = None,
+     model: 't.Optional[str]' = None,
+     max_batch_size: 'int' = 8,
+     postprocess: 't.Optional[t.Callable]' = None) -> None
+```
+| Parameter | Description |
+|-----------|-------------|
+| identifier | Identifier of the instance. |
+| upstream | A list of upstream components. |
+| db | Datalayer instance. Datalayer instance. |
+| datatype | DataType instance. |
+| model_update_kwargs | The kwargs to use for model update. |
+| predict_kwargs | Additional arguments to use at prediction time. |
+| compute_kwargs | Kwargs used for compute backend job submit. Example (Ray backend): compute_kwargs = dict(resources=...). |
+| validation | The validation ``Dataset`` instances to use. |
+| metric_values | The metrics to evaluate on. |
+| num_workers | Number of workers to use for parallel prediction. |
+| serve | Creates an http endpoint and serve the model with ``compute_kwargs`` on a distributed cluster. |
+| trainer | `Trainer` instance to use for training. |
+| model | The Model to use, e.g. ``'text-embedding-ada-002'`` |
+| max_batch_size | Maximum  batch size. |
+| postprocess | Postprocess function to use on the output of the API request |
+
+APIBaseModel component which is used to make the type of API request.
+
 ## `Model` 
 
 ```python
 Model(self,
      identifier: str,
      upstream: Optional[List[ForwardRef('Component')]] = None,
-     cache: Optional[bool] = True,
-     status: Optional[str] = None,
-     build_variables: Optional[Dict] = None,
-     build_template: str | None = None,
      db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
      *,
      datatype: 'str | None' = None,
-     output_schema: 't.Optional[t.Dict]' = None,
      model_update_kwargs: 't.Dict' = <factory>,
      predict_kwargs: 't.Dict' = <factory>,
      compute_kwargs: 't.Dict' = <factory>,
@@ -75,13 +102,8 @@ Model(self,
 |-----------|-------------|
 | identifier | Identifier of the instance. |
 | upstream | A list of upstream components. |
-| cache | (Optional) If set `true` the component will not be cached during primary job of the component i.e on a distributed cluster this component will be reloaded on every component task e.g model prediction. |
-| status | What part of the lifecycle the component is in. |
-| build_variables | Variables which were supplied to a template to build. |
-| build_template | Template which was used to build. |
-| db | Datalayer instance. |
+| db | Datalayer instance. Datalayer instance. |
 | datatype | DataType instance. |
-| output_schema | Output schema (mapping of encoders). |
 | model_update_kwargs | The kwargs to use for model update. |
 | predict_kwargs | Additional arguments to use at prediction time. |
 | compute_kwargs | Kwargs used for compute backend job submit. Example (Ray backend): compute_kwargs = dict(resources=...). |
@@ -99,14 +121,9 @@ Base class for components which can predict.
 ObjectModel(self,
      identifier: str,
      upstream: Optional[List[ForwardRef('Component')]] = None,
-     cache: Optional[bool] = True,
-     status: Optional[str] = None,
-     build_variables: Optional[Dict] = None,
-     build_template: str | None = None,
      db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
      *,
      datatype: 'str | None' = None,
-     output_schema: 't.Optional[t.Dict]' = None,
      model_update_kwargs: 't.Dict' = <factory>,
      predict_kwargs: 't.Dict' = <factory>,
      compute_kwargs: 't.Dict' = <factory>,
@@ -122,13 +139,8 @@ ObjectModel(self,
 |-----------|-------------|
 | identifier | Identifier of the instance. |
 | upstream | A list of upstream components. |
-| cache | (Optional) If set `true` the component will not be cached during primary job of the component i.e on a distributed cluster this component will be reloaded on every component task e.g model prediction. |
-| status | What part of the lifecycle the component is in. |
-| build_variables | Variables which were supplied to a template to build. |
-| build_template | Template which was used to build. |
-| db | Datalayer instance. |
+| db | Datalayer instance. Datalayer instance. |
 | datatype | DataType instance. |
-| output_schema | Output schema (mapping of encoders). |
 | model_update_kwargs | The kwargs to use for model update. |
 | predict_kwargs | Additional arguments to use at prediction time. |
 | compute_kwargs | Kwargs used for compute backend job submit. Example (Ray backend): compute_kwargs = dict(resources=...). |
@@ -156,14 +168,9 @@ m.predict(2)
 QueryModel(self,
      identifier: str,
      upstream: Optional[List[ForwardRef('Component')]] = None,
-     cache: Optional[bool] = True,
-     status: Optional[str] = None,
-     build_variables: Optional[Dict] = None,
-     build_template: str | None = None,
      db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
      *,
      datatype: 'str | None' = None,
-     output_schema: 't.Optional[t.Dict]' = None,
      model_update_kwargs: 't.Dict' = <factory>,
      predict_kwargs: 't.Dict' = <factory>,
      compute_kwargs: 't.Dict' = <factory>,
@@ -181,13 +188,8 @@ QueryModel(self,
 |-----------|-------------|
 | identifier | Identifier of the instance. |
 | upstream | A list of upstream components. |
-| cache | (Optional) If set `true` the component will not be cached during primary job of the component i.e on a distributed cluster this component will be reloaded on every component task e.g model prediction. |
-| status | What part of the lifecycle the component is in. |
-| build_variables | Variables which were supplied to a template to build. |
-| build_template | Template which was used to build. |
-| db | Datalayer instance. |
+| db | Datalayer instance. Datalayer instance. |
 | datatype | DataType instance. |
-| output_schema | Output schema (mapping of encoders). |
 | model_update_kwargs | The kwargs to use for model update. |
 | predict_kwargs | Additional arguments to use at prediction time. |
 | compute_kwargs | Kwargs used for compute backend job submit. Example (Ray backend): compute_kwargs = dict(resources=...). |
@@ -212,14 +214,10 @@ precomputed queries as Results.
 Trainer(self,
      identifier: str,
      upstream: Optional[List[ForwardRef('Component')]] = None,
-     cache: Optional[bool] = True,
-     status: Optional[str] = None,
-     build_variables: Optional[Dict] = None,
-     build_template: str | None = None,
      db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
      *,
      key: 'st.JSON',
-     select: 'st.LeafType',
+     select: 'st.BaseType',
      transform: 't.Optional[t.Callable]' = None,
      metric_values: 't.Dict' = <factory>,
      in_memory: 'bool' = True,
@@ -230,11 +228,7 @@ Trainer(self,
 |-----------|-------------|
 | identifier | Identifier of the instance. |
 | upstream | A list of upstream components. |
-| cache | (Optional) If set `true` the component will not be cached during primary job of the component i.e on a distributed cluster this component will be reloaded on every component task e.g model prediction. |
-| status | What part of the lifecycle the component is in. |
-| build_variables | Variables which were supplied to a template to build. |
-| build_template | Template which was used to build. |
-| db | Datalayer instance. |
+| db | Datalayer instance. Datalayer instance. |
 | key | Model input type key. |
 | select | Model select query for training. |
 | transform | (optional) transform callable. |
@@ -255,10 +249,6 @@ and returns a class which may be invoked to apply training.
 Validation(self,
      identifier: str,
      upstream: Optional[List[ForwardRef('Component')]] = None,
-     cache: Optional[bool] = True,
-     status: Optional[str] = None,
-     build_variables: Optional[Dict] = None,
-     build_template: str | None = None,
      db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
      *,
      metrics: 't.List[Metric]' = <factory>,
@@ -269,67 +259,12 @@ Validation(self,
 |-----------|-------------|
 | identifier | Identifier of the instance. |
 | upstream | A list of upstream components. |
-| cache | (Optional) If set `true` the component will not be cached during primary job of the component i.e on a distributed cluster this component will be reloaded on every component task e.g model prediction. |
-| status | What part of the lifecycle the component is in. |
-| build_variables | Variables which were supplied to a template to build. |
-| build_template | Template which was used to build. |
-| db | Datalayer instance. |
+| db | Datalayer instance. Datalayer instance. |
 | metrics | List of metrics for validation |
 | key | Model input type key |
 | datasets | Sequence of dataset. |
 
 Component which represents Validation definition.
-
-## `APIBaseModel` 
-
-```python
-APIBaseModel(self,
-     identifier: str,
-     upstream: Optional[List[ForwardRef('Component')]] = None,
-     cache: Optional[bool] = True,
-     status: Optional[str] = None,
-     build_variables: Optional[Dict] = None,
-     build_template: str | None = None,
-     db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
-     *,
-     datatype: 'str | None' = None,
-     output_schema: 't.Optional[t.Dict]' = None,
-     model_update_kwargs: 't.Dict' = <factory>,
-     predict_kwargs: 't.Dict' = <factory>,
-     compute_kwargs: 't.Dict' = <factory>,
-     validation: 't.Optional[Validation]' = None,
-     metric_values: 't.Dict' = <factory>,
-     num_workers: 'int' = 0,
-     serve: 'bool' = False,
-     trainer: 't.Optional[Trainer]' = None,
-     model: 't.Optional[str]' = None,
-     max_batch_size: 'int' = 8,
-     postprocess: 't.Optional[t.Callable]' = None) -> None
-```
-| Parameter | Description |
-|-----------|-------------|
-| identifier | Identifier of the instance. |
-| upstream | A list of upstream components. |
-| cache | (Optional) If set `true` the component will not be cached during primary job of the component i.e on a distributed cluster this component will be reloaded on every component task e.g model prediction. |
-| status | What part of the lifecycle the component is in. |
-| build_variables | Variables which were supplied to a template to build. |
-| build_template | Template which was used to build. |
-| db | Datalayer instance. |
-| datatype | DataType instance. |
-| output_schema | Output schema (mapping of encoders). |
-| model_update_kwargs | The kwargs to use for model update. |
-| predict_kwargs | Additional arguments to use at prediction time. |
-| compute_kwargs | Kwargs used for compute backend job submit. Example (Ray backend): compute_kwargs = dict(resources=...). |
-| validation | The validation ``Dataset`` instances to use. |
-| metric_values | The metrics to evaluate on. |
-| num_workers | Number of workers to use for parallel prediction. |
-| serve | Creates an http endpoint and serve the model with ``compute_kwargs`` on a distributed cluster. |
-| trainer | `Trainer` instance to use for training. |
-| model | The Model to use, e.g. ``'text-embedding-ada-002'`` |
-| max_batch_size | Maximum  batch size. |
-| postprocess | Postprocess function to use on the output of the API request |
-
-APIBaseModel component which is used to make the type of API request.
 
 ## `APIModel` 
 
@@ -337,14 +272,9 @@ APIBaseModel component which is used to make the type of API request.
 APIModel(self,
      identifier: str,
      upstream: Optional[List[ForwardRef('Component')]] = None,
-     cache: Optional[bool] = True,
-     status: Optional[str] = None,
-     build_variables: Optional[Dict] = None,
-     build_template: str | None = None,
      db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
      *,
      datatype: 'str | None' = None,
-     output_schema: 't.Optional[t.Dict]' = None,
      model_update_kwargs: 't.Dict' = <factory>,
      predict_kwargs: 't.Dict' = <factory>,
      compute_kwargs: 't.Dict' = <factory>,
@@ -362,13 +292,8 @@ APIModel(self,
 |-----------|-------------|
 | identifier | Identifier of the instance. |
 | upstream | A list of upstream components. |
-| cache | (Optional) If set `true` the component will not be cached during primary job of the component i.e on a distributed cluster this component will be reloaded on every component task e.g model prediction. |
-| status | What part of the lifecycle the component is in. |
-| build_variables | Variables which were supplied to a template to build. |
-| build_template | Template which was used to build. |
-| db | Datalayer instance. |
+| db | Datalayer instance. Datalayer instance. |
 | datatype | DataType instance. |
-| output_schema | Output schema (mapping of encoders). |
 | model_update_kwargs | The kwargs to use for model update. |
 | predict_kwargs | Additional arguments to use at prediction time. |
 | compute_kwargs | Kwargs used for compute backend job submit. Example (Ray backend): compute_kwargs = dict(resources=...). |
@@ -384,82 +309,15 @@ APIModel(self,
 
 APIModel component which is used to make the type of API request.
 
-## `IndexableNode` 
-
-```python
-IndexableNode(self,
-     types: 't.Sequence[t.Type]') -> None
-```
-| Parameter | Description |
-|-----------|-------------|
-| types | Sequence of types |
-
-Base indexable node for `ObjectModel`.
-
-## `ModelRouter` 
-
-```python
-ModelRouter(self,
-     identifier: str,
-     upstream: Optional[List[ForwardRef('Component')]] = None,
-     cache: Optional[bool] = True,
-     status: Optional[str] = None,
-     build_variables: Optional[Dict] = None,
-     build_template: str | None = None,
-     db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
-     *,
-     datatype: 'str | None' = None,
-     output_schema: 't.Optional[t.Dict]' = None,
-     model_update_kwargs: 't.Dict' = <factory>,
-     predict_kwargs: 't.Dict' = <factory>,
-     compute_kwargs: 't.Dict' = <factory>,
-     validation: 't.Optional[Validation]' = None,
-     metric_values: 't.Dict' = <factory>,
-     num_workers: 'int' = 0,
-     serve: 'bool' = False,
-     trainer: 't.Optional[Trainer]' = None,
-     models: 't.Dict[str,
-     Model]',
-     model: 'str') -> None
-```
-| Parameter | Description |
-|-----------|-------------|
-| identifier | Identifier of the instance. |
-| upstream | A list of upstream components. |
-| cache | (Optional) If set `true` the component will not be cached during primary job of the component i.e on a distributed cluster this component will be reloaded on every component task e.g model prediction. |
-| status | What part of the lifecycle the component is in. |
-| build_variables | Variables which were supplied to a template to build. |
-| build_template | Template which was used to build. |
-| db | Datalayer instance. |
-| datatype | DataType instance. |
-| output_schema | Output schema (mapping of encoders). |
-| model_update_kwargs | The kwargs to use for model update. |
-| predict_kwargs | Additional arguments to use at prediction time. |
-| compute_kwargs | Kwargs used for compute backend job submit. Example (Ray backend): compute_kwargs = dict(resources=...). |
-| validation | The validation ``Dataset`` instances to use. |
-| metric_values | The metrics to evaluate on. |
-| num_workers | Number of workers to use for parallel prediction. |
-| serve | Creates an http endpoint and serve the model with ``compute_kwargs`` on a distributed cluster. |
-| trainer | `Trainer` instance to use for training. |
-| models | A dictionary of models to use |
-| model | The model to use |
-
-ModelRouter component which routes the model to the correct model.
-
 ## `SequentialModel` 
 
 ```python
 SequentialModel(self,
      identifier: str,
      upstream: Optional[List[ForwardRef('Component')]] = None,
-     cache: Optional[bool] = True,
-     status: Optional[str] = None,
-     build_variables: Optional[Dict] = None,
-     build_template: str | None = None,
      db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
      *,
      datatype: 'str | None' = None,
-     output_schema: 't.Optional[t.Dict]' = None,
      model_update_kwargs: 't.Dict' = <factory>,
      predict_kwargs: 't.Dict' = <factory>,
      compute_kwargs: 't.Dict' = <factory>,
@@ -474,13 +332,8 @@ SequentialModel(self,
 |-----------|-------------|
 | identifier | Identifier of the instance. |
 | upstream | A list of upstream components. |
-| cache | (Optional) If set `true` the component will not be cached during primary job of the component i.e on a distributed cluster this component will be reloaded on every component task e.g model prediction. |
-| status | What part of the lifecycle the component is in. |
-| build_variables | Variables which were supplied to a template to build. |
-| build_template | Template which was used to build. |
-| db | Datalayer instance. |
+| db | Datalayer instance. Datalayer instance. |
 | datatype | DataType instance. |
-| output_schema | Output schema (mapping of encoders). |
 | model_update_kwargs | The kwargs to use for model update. |
 | predict_kwargs | Additional arguments to use at prediction time. |
 | compute_kwargs | Kwargs used for compute backend job submit. Example (Ray backend): compute_kwargs = dict(resources=...). |

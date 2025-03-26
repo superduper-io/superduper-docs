@@ -15,7 +15,7 @@ m = Listener(
         object=lambda x: x + 2,
         identifier='<var:model_id>',
     ),
-    select=db['<var:collection>'].find(),
+    select=db['<var:table>'].find(),
     key='<var:key>',
 )
 
@@ -29,7 +29,7 @@ db.apply(t)
 ## template may also be exported to a portable format
 t.export()
 
-listener = t(key='my_key', collection='my_collection', model_id='my_id')
+listener = t(key='my_key', table='my_table', model_id='my_id')
 
 # this now triggers standard functionality
 db.apply(listener)

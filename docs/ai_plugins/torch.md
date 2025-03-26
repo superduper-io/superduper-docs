@@ -1,5 +1,5 @@
 <!-- Auto-generated content start -->
-# superduper_torch
+# `superduper_torch`
 
 Superduper allows users to work with arbitrary `torch` models, with custom pre-, post-processing and input/ output data-types, as well as offering training with superduper
 

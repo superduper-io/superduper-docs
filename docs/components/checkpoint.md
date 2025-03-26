@@ -33,5 +33,5 @@ my_model.best_checkpoint = 1
 db.apply(my_model)     
 
 # loads `self.checkpoints[1]`
-m = db.load('model', 'my-model')
+m = db.load('MyModel', 'my-model')
 ```

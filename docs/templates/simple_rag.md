@@ -10,7 +10,7 @@ Otherwise refer to "Configuring your production system".
 
 
 ```python
-APPLY = False
+APPLY = True
 SAMPLE_COLLECTION_NAME = 'sample_simple_rag'
 COLLECTION_NAME = '<var:table_name>' if not APPLY else 'docs'
 ID_FIELD = '<var:id_field>' if not APPLY else 'id'
@@ -24,12 +24,6 @@ from superduper import superduper, CFG
 import os
 
 db = superduper('mongomock://', initialize_cluster=False)
-```
-
-
-```python
-db.drop(True, True)
-db = superduper('mongomock://')
 ```
 
 
@@ -179,7 +173,6 @@ llm_openai = OpenAIChatCompletion(
 
 
 ```python
-from superduper import model
 from rag_plugin import RAGModel
 
 
@@ -243,7 +236,6 @@ if APPLY:
 if APPLY:
     rag = db.load('RAGModel', 'simple_rag')
     print(rag.predict('Tell me about vector-search in the project and the use of lance.'))
-
 ```
 
 You can now load the model elsewhere and make predictions using the following command.
@@ -302,4 +294,9 @@ template = Template(
     },
     db=db
 )
+```
+
+
+```python
+template.export('.')
 ```

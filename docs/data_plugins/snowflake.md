@@ -1,5 +1,5 @@
 <!-- Auto-generated content start -->
-# Snowflake
+# `superduper_snowflake`
 
 ## Installation
 

@@ -1,5 +1,5 @@
 <!-- Auto-generated content start -->
-# superduper_llamacpp
+# `superduper_llamacpp`
 
 Superduper allows users to work with self-hosted LLM models via [Llama.cpp](https://github.com/ggerganov/llama.cpp).
 

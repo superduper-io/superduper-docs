@@ -50,19 +50,19 @@ Blob(self,
 
 Placeholder for a blob of bytes.
 
+## `BaseType` 
+
+```python
+BaseType(self) -> None
+```
+Datatype for encoding base instances.
+
 ## `ComponentType` 
 
 ```python
 ComponentType(self) -> None
 ```
-Datatype for encoding leafs.
-
-## `LeafType` 
-
-```python
-LeafType(self) -> None
-```
-Datatype for encoding leafs.
+Datatype for encoding `Component` instances.
 
 ## `FileItem` 
 
@@ -112,6 +112,20 @@ BaseVector(self,
 
 Base class for vector.
 
+## `ComponentDict` 
+
+```python
+ComponentDict(self) -> None
+```
+Datatype for encoding dictionaries which are supported as dict by databackend.
+
+## `ComponentList` 
+
+```python
+ComponentList(self) -> None
+```
+Datatype for encoding lists which are supported as list by databackend.
+
 ## `Dill` 
 
 ```python
@@ -130,13 +144,6 @@ from superduper.components.datatype import DEFAULT_SERIALIZER
 DillEncoder(self) -> None
 ```
 Encoder with dill.
-
-## `FDict` 
-
-```python
-FDict(self) -> None
-```
-Datatype for encoding dictionaries of files.
 
 ## `FieldType` 
 
@@ -158,6 +165,13 @@ This is a wrapper around a database's native datatypes.
 File(self) -> None
 ```
 Type for encoding files on disk.
+
+## `FileDict` 
+
+```python
+FileDict(self) -> None
+```
+Datatype for encoding dictionaries of files.
 
 ## `JSON` 
 
@@ -194,20 +208,6 @@ Serializer with pickle.
 PickleEncoder(self) -> None
 ```
 Pickle encoder.
-
-## `SDict` 
-
-```python
-SDict(self) -> None
-```
-Datatype for encoding dictionaries which are supported as dict by databackend.
-
-## `SList` 
-
-```python
-SList(self) -> None
-```
-Datatype for encoding lists which are supported as list by databackend.
 
 ## `Saveable` 
 

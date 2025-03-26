@@ -1,5 +1,5 @@
 <!-- Auto-generated content start -->
-# superduper_anthropic
+# `superduper_anthropic`
 
 Superduper allows users to work with anthropic API models. The key integration is the integration of high-quality API-hosted LLM services.
 

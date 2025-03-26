@@ -1,5 +1,5 @@
 <!-- Auto-generated content start -->
-# superduper_cohere
+# `superduper_cohere`
 
 Superduper allows users to work with cohere API models.
 

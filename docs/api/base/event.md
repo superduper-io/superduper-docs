@@ -35,7 +35,7 @@ Job(self,
      job_id: Optional[str] = <factory>,
      method: str,
      status: str = 'pending',
-     dependencies: Sequence[str] = ()) -> None
+     dependencies: List[str] = <factory>) -> None
 ```
 | Parameter | Description |
 |-----------|-------------|

@@ -9,7 +9,7 @@
 ***Usage pattern***
 
 ```python
-template = db.load('template', 'my_template')
+template = db.load('Template', 'my_template')
 
 application = template(my_variable_1='my_value_1',
                        my_variable_2='my_value_2')

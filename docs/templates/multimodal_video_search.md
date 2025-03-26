@@ -25,7 +25,8 @@ def getter():
     import os
     import subprocess
     subprocess.run(['rm', 'videos.zip'])
-    subprocess.run(['rm', '-rf', 'videos'])
+    subprocess.run(['rm'
+                    , '-rf', 'videos'])
     subprocess.run(['curl', '-O', 'https://superduperdb-public-demo.s3.amazonaws.com/videos.zip'])
     subprocess.run(['unzip', 'videos.zip'])
     subprocess.run(['rm', 'videos.zip'])
@@ -54,8 +55,7 @@ It also supports custom data conversion methods for transforming data, such as d
 from superduper.components.table import Table
 from superduper import Schema
 
-schema = Schema(identifier="schema", fields={"x": 'file'})
-table = Table(TABLE_NAME, schema=schema)
+table = Table(TABLE_NAME, fields={'x': 'file'})
 
 if APPLY:
     db.apply(table, force=True)
@@ -64,7 +64,7 @@ if APPLY:
 
 ```python
 if APPLY:
-    db[TABLE_NAME].insert(data).execute()
+    db[TABLE_NAME].insert(data)
 ```
 
 <!-- TABS -->
@@ -87,13 +87,16 @@ won't be necessary.
 import cv2
 import tqdm
 from PIL import Image
-from superduper.ext.pillow import pil_image
-from superduper import model, Schema
+from superduper import Schema, ObjectModel
+from superduper.base.datatype import FileItem
+from superduper.misc.importing import isreallyinstance
 
 
-@model
 def chunker(video_file):
     # Set the sampling frequency for frames
+
+    if isreallyinstance(video_file, FileItem):
+        video_file = video_file.unpack()
     sample_freq = 100
     
     # Open the video file using OpenCV
@@ -123,12 +126,19 @@ def chunker(video_file):
         frame_count += 1
         progress.update(1)
     
-    # Release resources
+    # Release resources 
     cap.release()
     cv2.destroyAllWindows()
     
     # Return the list of extracted frames
     return extracted_frames
+
+
+chunker = ObjectModel(
+    'chunker', 
+    object=chunker,
+    datatype='image=superduper_pillow.pil_image|current_timestamp=int',
+)
 ```
 
 Now we apply this chunker to the data by wrapping the chunker in `Listener`:
@@ -139,13 +149,17 @@ from superduper import Listener
 
 upstream_listener = Listener(
     model=chunker,
-    select=db['docs'].select(),
+    select=db['docs'],
     key='x',
     identifier='chunker',
     flatten=True,
     upstream=[table],
-    predict_kwargs={'max_chunk_size': 1},
 )
+```
+
+
+```python
+db.remove('Listener', 'chunker', force=True)
 ```
 
 
@@ -154,42 +168,63 @@ if APPLY:
     db.apply(upstream_listener, force=True)
 ```
 
-## Build multimodal embedding models
+# Build multimodal embedding models
 
 We define the output data type of a model as a vector for vector transformation.
-
-
-```python
-from superduper.components.datatype import Vector
-output_datatype = Vector(shape=(1024,))
-```
 
 Then define two models, one for text embedding and one for image embedding.
 
 
 ```python
 import clip
-from superduper import imported
-from superduper_torch import TorchModel
+import torch
 
-vit = imported(clip.load)("ViT-B/32", device='cpu')
+from superduper import Model
 
-compatible_model = TorchModel(
-    identifier='clip_text',
-    object=vit[0],
-    preprocess=lambda x: clip.tokenize(x)[0], 
-    postprocess=lambda x: x.numpy(),
-    datatype=output_datatype,
-    forward_method='encode_text',
-)
 
-model = TorchModel(
-    identifier='clip_image', 
-    object=vit[0].visual,
-    preprocess=vit[1],
-    postprocess=lambda x: x.tolist(),
-    datatype=output_datatype,
-)
+class TextModel(Model):
+    model: str = 'Vit-B/32'
+    device: str = 'cpu'
+    
+    def init(self):
+        self.vit = clip.load("ViT-B/32", device='cpu')[0]
+        self.vit.to(self.device)
+
+    def predict(self, text):
+        preprocessed = clip.tokenize(text)
+        activations = self.vit.encode_text(preprocessed)[0]
+        return activations.detach().numpy()
+
+
+class ImageModel(Model):
+    model: str = 'Vit-B/32'
+    device: str = 'cpu'
+    batch_size: int = 10
+
+    def init(self):
+        tmp = clip.load("ViT-B/32", device='cpu')
+        self.visual_model = tmp[0].visual
+        self.preprocess = tmp[1]
+
+    def predict(self, image):
+        preprocessed = self.preprocess(image)[None, :]
+        activations = self.visual_model(preprocessed)[0]
+        return activations.detach().numpy()
+
+    def predict_batches(self, images):
+        out = []
+        for i in range(0, len(images), self.batch_size):
+            sub = images[i: i + self.batch_size]
+            preprocessed = [self.preprocess(img) for img in sub]
+            activations = self.visual_model(torch.stack(preprocessed, 0))
+            out.extend([x.detach().numpy() for x in activations])
+        return out
+```
+
+
+```python
+text_model = TextModel('text', datatype='vector[float:512]')
+image_model = ImageModel('image', datatype='vector[float:512]')
 ```
 
 Because we use multimodal models, we define different keys to specify which model to use for embedding calculations in the vector_index.
@@ -205,12 +240,12 @@ vector_index = VectorIndex(
     indexing_listener=Listener(
         key=upstream_listener.outputs + '.image',
         select=db[upstream_listener.outputs].select(),
-        model=model,
-        identifier=f'{model.identifier}-listener'
+        model=image_model,
+        identifier=f'{text_model.identifier}-listener'
     ),
     compatible_listener=Listener(
         key='text',
-        model=compatible_model,
+        model=text_model,
         select=None,
         identifier='compatible-listener',
     ),
@@ -222,6 +257,11 @@ vector_index = VectorIndex(
 ```python
 if APPLY:
     db.apply(vector_index)
+```
+
+
+```python
+db.show()
 ```
 
 
@@ -250,21 +290,16 @@ We can perform the vector searches using text description:
 
 ```python
 from superduper import Document
-item = Document({'text': "Monkeys playing"})
+query = "Monkeys playing"
 ```
 
 
 ```python
 from superduper import Document
-item = Document({'text': "Spaceship on the moon"})
+query = "Spaceship on the moon"
 ```
 
 Once we have this search target, we can execute a search as follows.
-
-
-```python
-list(db['docs'].select().execute())
-```
 
 ## Visualize Results
 
@@ -272,10 +307,10 @@ list(db['docs'].select().execute())
 ```python
 if APPLY:
     from IPython.display import display
-    select = db[upstream_listener.outputs].like(item, vector_index='my-vector-index', n=1).select()
+    select = db[upstream_listener.outputs].like({'text': query}, vector_index='my-vector-index', n=3).select()
 
     for result in select.execute():
-        display(Document(result.unpack())[upstream_listener.outputs + '.image'])
+        display(result[upstream_listener.outputs + '.image'])
 ```
 
 

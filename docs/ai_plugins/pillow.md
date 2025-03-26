@@ -1,5 +1,5 @@
 <!-- Auto-generated content start -->
-# superduper_pillow
+# `superduper_pillow`
 
 `superduper_pillow` is a plugin for SuperDuper that provides support for Pillow.
 

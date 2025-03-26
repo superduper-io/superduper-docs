@@ -6,6 +6,7 @@
 
 ```python
 EncodeContext(self,
+     name: str = '__main__',
      builds: Dict[str,
      dict] = <factory>,
      blobs: Dict[str,

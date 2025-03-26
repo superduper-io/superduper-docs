@@ -93,8 +93,7 @@ from superduper import superduper
 db = superduper('mongomock://test_db')
 ```
 
-Datapoints and components in `superduper` are dual to one another, via `Base.dict()` and 
-`Document.base()` read more about this [here](). In the below example, we define 
+Datapoints and components in `superduper` are dual to one another, via `Base.dict()`. In the below example, we define 
 data-points which include key information about particular individuals and their contacts.
 
 

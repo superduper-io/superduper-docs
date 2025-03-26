@@ -18,7 +18,7 @@ TABLE_NAME = 'sample_llm_finetuning'
 ```python
 from superduper import superduper
 
-db = superduper('mongomock://test_db', force_apply=True)
+db = superduper('mongomock://test_db')
 ```
 
 <!-- TABS -->
@@ -84,12 +84,22 @@ After turning on auto_schema, we can directly insert data, and superduper will a
 
 
 ```python
+from superduper import Table
+
 table_or_collection = db[TABLE_NAME]
 
 if APPLY:
-    table_or_collection.insert(data).execute()
+    db.apply(
+        Table(
+            TABLE_NAME,
+            fields={'text': 'str', '_fold': 'str'},
+        ),
+        force=True
+    )
+    
+    table_or_collection.insert(data)
 
-select = table_or_collection.select()
+select = table_or_collection
 ```
 
 ## Select a Model
@@ -154,7 +164,7 @@ if APPLY:
 
 
 ```python
-from superduper import Template, Table, Schema, Application
+from superduper import Template, Table, Application
 from superduper.components.dataset import RemoteData
 
 llm.trainer.use_lora = "<var:use_lora>"
@@ -169,17 +179,16 @@ t = Template(
         TABLE_NAME: 'table_name',
         model_name: 'model_name',
     },
-    default_table=Table(
-        'sample_llm_finetuning',
-        schema=Schema(
-            'sample_llm_finetuning/schema',
+    default_tables=[
+        Table(
+            'sample_llm_finetuning',
             fields={'x': 'str', 'y': 'int'},
-        ),
-        data=RemoteData(
-            'llm_finetuning',
-            getter=getter,
-        ),
-    ),
+            data=RemoteData(
+                'llm_finetuning',
+                getter=getter,
+            ),
+        )
+    ],
     template_variables=['table_name', 'model_name', 'use_lora', 'num_train_epochs'],
     types={
         'collection': {
@@ -201,8 +210,9 @@ t = Template(
         'table_name': {
             'type': 'str',
             'default': 'sample_llm_finetuning',
-        }
-    }
+        },
+    },
+    db=db,
 )
 
 t.export('.')
@@ -217,11 +227,11 @@ There are two methods to load a trained model:
 
 ```python
 if APPLY:
-    llm = db.load("model", "llm")
+    llm = db.load("LLM", "llm")
 ```
 
 
 ```python
 if APPLY:
-    llm.predict(input_text, max_new_tokens=200)
+    print(llm.predict(input_text, max_new_tokens=200))
 ```

@@ -10,11 +10,11 @@ Superduper integrates with 3 types of data-backend:
     - [PostgreSQL](https://www.postgresql.org/)
     - [Oracle](https://www.oracle.com/database/)
     - [SQLite](https://www.sqlite.org/)
-    - [Snowflake](https://www.snowflake.com/en/)
     - [DuckDB](https://duckdb.org/)
     - [Clickhouse](https://clickhouse.com/)
-- In-memory tabular formats
-    - [Pandas](https://pandas.pydata.org/docs/)
+    - [Snowflake](https://www.snowflake.com/en/)
+- Snowflake (dedicated)
+    - [Snowflake](https://www.snowflake.com/en/)
 
 Although these data-backends provide very different functionality, 
 with Superduper they are accessible via a uniform API.

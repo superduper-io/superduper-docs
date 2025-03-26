@@ -1,5 +1,5 @@
 <!-- Auto-generated content start -->
-# superduper_vllm
+# `superduper_vllm`
 
 Superduper allows users to work with self-hosted LLM models via [vLLM](https://github.com/vllm-project/vllm).
 

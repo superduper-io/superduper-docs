@@ -24,6 +24,7 @@ db = superduper('mongomock://test')
 def getter():
     import subprocess
     import os
+
     subprocess.run(['curl', '-O', 'https://superduperdb-public-demo.s3.amazonaws.com/pdfs.zip'])
     subprocess.run(['unzip', '-o', 'pdfs.zip'])
     subprocess.run(['rm', 'pdfs.zip'])
@@ -45,15 +46,13 @@ if APPLY:
 
 ```python
 import os
-from superduper import Schema, Table
-from superduper.components.datatype import file
+from superduper import Table
 
-schema = Schema(identifier="myschema", fields={'url': 'str', 'file': file})
-table = Table(identifier=COLLECTION_NAME, schema=schema)
+table = Table(identifier=COLLECTION_NAME, fields={'url': 'str', 'file': 'file'})
 
 if APPLY:
     db.apply(table, force=True)
-    db[COLLECTION_NAME].insert(data).execute()
+    db[COLLECTION_NAME].insert(data)
 ```
 
 
@@ -70,12 +69,16 @@ db.show()
 
 
 ```python
-from superduper import ObjectModel, logging
+from superduper import ObjectModel, Listener, logging
+
 from pdf2image import convert_from_path
 import os
 
 
 def split_image(pdf_path):
+    if hasattr(pdf_path, 'unpack'):
+        pdf_path = pdf_path.unpack()
+    
     logging.info(f"Splitting images from {pdf_path}")
 
     image_folders = "data/pdf-images"
@@ -98,12 +101,14 @@ def split_image(pdf_path):
 model_split_image = ObjectModel(
     identifier="split_image",
     object=split_image,
-    datatype=file,
+    datatype='file',
 )
 
-listener_split_image = model_split_image.to_listener(
+listener_split_image = Listener(
+    'split_image', 
+    model=model_split_image,
     key="file",
-    select=db[COLLECTION_NAME].find(),
+    select=db[COLLECTION_NAME],
     flatten=True,
 )
 
@@ -200,9 +205,11 @@ def create_chunk_and_metadatas(page_elements, stride=3, window=10):
 
 def get_chunks(pdf):
     from collections import defaultdict
-
     from unstructured.documents.coordinates import RelativeCoordinateSystem
     from unstructured.partition.pdf import partition_pdf
+
+    if hasattr(pdf, 'unpack'):
+        pdf = pdf.unpack()
 
     elements = partition_pdf(pdf)
     elements = remove_annotation(elements)
@@ -226,17 +233,17 @@ def get_chunks(pdf):
 
 
 ```python
-from superduper.components.schema import FieldType
-
 model_chunk = ObjectModel(
     identifier="chunk",
     object=get_chunks,
-    datatype=FieldType(identifier="json")
+    datatype='json',
 )
 
-listener_chunk = model_chunk.to_listener(
-    key="file",
-    select=db[COLLECTION_NAME].select(),
+listener_chunk = Listener(
+    'chunker',
+    key='file',
+    model=model_chunk,
+    select=db[COLLECTION_NAME],
     flatten=True,
 )
 
@@ -246,27 +253,21 @@ if EAGER and APPLY:
 
 ## Build a vector index for vector search
 
-OpenAI:
-
-
-```python
-pip install -e ../../plugins/openai
-```
-
 
 ```python
 from superduper_openai import OpenAIEmbedding
-from superduper.components.datatype import Vector
-openai_embedding = OpenAIEmbedding(identifier='embedding', model='text-embedding-ada-002', datatype=Vector(shape=(1536,)))
+
+openai_embedding = OpenAIEmbedding(identifier='embedding', model='text-embedding-ada-002', datatype='vector[float:1536]')
 ```
 
 
 ```python
 from superduper_openai.model import OpenAIEmbedding
 from superduper import VectorIndex
-from superduper.components.datatype import Vector
 
-listener_embedding = openai_embedding.to_listener(
+listener_embedding = Listener(
+    'embedding',
+    model=openai_embedding,
     key=f"{listener_chunk.outputs}.txt",
     select=db[listener_chunk.outputs].select(),
 )
@@ -291,65 +292,18 @@ The processor will integrate the returned chunks information with the images, an
 from superduper import Plugin
 from utils import Processor
 
+
 processor = Processor(
     identifier="processor",
-    db=db,
     chunk_key=listener_chunk.outputs,
     split_image_key=listener_split_image.outputs,
-    plugins=[Plugin(path="./utils.py")],
+    upstream=[Plugin(path="./utils.py")],
 )
 ```
 
 ## Create a RAG model
 
 Create a RAG model to perform retrieval-augmented generation (RAG) and return the results.
-
-
-```python
-from superduper import Model, logging
-
-
-class Rag(Model):
-    llm_model: Model
-    prompt_template: str
-    processor: None | Model = None
-    vector_index: VectorIndex
-
-    def __post_init__(self, *args, **kwargs):
-        assert "{context}" in self.prompt_template, 'The prompt_template must include "{context}"'
-        assert "{query}" in self.prompt_template, 'The prompt_template must include "{query}"'
-        super().__post_init__(*args, **kwargs)
-
-    def predict(self, query, top_k=5, format_result=False):
-        vector_search_out = self.vector_search(query, top_k=top_k)
-        key = self.vector_index.indexing_listener.key
-        context = "\n\n---\n\n".join([x[key] for x in vector_search_out])
-        
-        prompt = self.prompt_template.format(context=context, query=query)
-        output = self.llm_model.predict(prompt)
-        result = {
-            "answer": output,
-            "docs": vector_search_out,
-        }
-        if format_result and self.processor:
-            result["images"] = list(self.processor.predict(
-                vector_search_out,
-                match_text=output,
-            ))
-        return result
-
-    def vector_search(self, query, top_k=5, format_result=False):
-        logging.info(f"Vector search query: {query}")
-        select = self.db[self.vector_index.indexing_listener.select.table].like(
-            {self.vector_index.indexing_listener.key:query},
-            vector_index=self.vector_index.identifier, 
-            n=top_k,
-        ).select()
-        out = select.execute()
-        if out:
-            out = sorted(out, key=lambda x: x["score"], reverse=True)
-        return out
-```
 
 
 ```python
@@ -361,6 +315,7 @@ llm_openai = OpenAIChatCompletion(identifier='llm-openai', model='gpt-3.5-turbo'
 
 ```python
 from superduper_openai.model import OpenAIChatCompletion
+from utils import Rag
 
 prompt_template = (
     "The following is a document and question\n"
@@ -376,10 +331,16 @@ rag = Rag(
     llm_model=llm_openai,
     vector_index=vector_index, 
     prompt_template=prompt_template,
-    db=db,
     processor=processor,
     upstream=[vector_index],
 )
+```
+
+
+```python
+from utils import Rag
+
+Rag.__module__
 ```
 
 ## Create template
@@ -404,7 +365,7 @@ app = Application(
 
 ```python
 if APPLY:
-    db.apply(app)
+    db.apply(app, force=True)
 ```
 
 
@@ -441,10 +402,7 @@ template = Template(
     template_variables=['table_name', 'prompt_template', 'llm_model', 'embedding_model'],
     default_tables=[Table(
         'sample_pdf_rag',
-        schema=Schema(
-            'sample_pdf_rag/schema',
-            fields={"url": "str", "file": file}
-        ),
+        fields={"url": "str", "file": 'file'},
         data=RemoteData('sample_pdfs', getter=getter),
     )],
     types={

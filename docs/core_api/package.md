@@ -12,12 +12,6 @@ Any component may be exported to disk with:
 component.export('<path_to_export>')
 ```
 
-or in a compressed format:
-
-```python
-component.export('<path_to_export>', zip=True)
-```
-
 The component may be reloaded, without any type of prior initialization, in another session or program:
 
 ```python
@@ -27,7 +21,6 @@ component = Component.read('<path_to_export>')
 ```
 
 The component may be then reused with `db.apply`.
-
 
 ## Packaging multiple `Component` instances as an `Application`
 
@@ -50,12 +43,45 @@ db.show(application='my-app')
 and all components may be removed in a single command:
 
 ```python
-db.remove('application', 'my-app')
+db.remove('Application', 'my-app', recursive=True)
 ```
 
 ## Creating `Template` instances from `Component`
 
 
 In order to re-use `Component` instances with certain values replaced with new values, 
-for example, the location of data, Superduper provides 2 important `Component` subtypes:
+for example, the location of data, Superduper provides an additional helper component: `Template`.
 
+Create the template:
+
+```python
+t = Template('my-template', substitutions={'my_value': 'my_variable'}, templte=app)
+
+t.export('<path_to_export>')
+```
+
+Load the template and reuse:
+
+```python
+t = Template.read('<path_to_export>')
+
+app = t(my_variable='new_value')
+
+db.apply(app)
+```
+
+## Leveraging plugins to make development code portable
+
+If developers would like to include locally developed code in their `Component`, `Application` and `Template` instances and implementations, 
+they can use the [`Plugin`](../components/plugin) component.
+
+```python
+from superduper import Plugin
+
+plugin = Plugin('./my_local_file.py')
+
+app = Application('my-app', components=[my_model, my_cdc, my_vector_index], upstream=[plugin])
+
+db.apply(app)   # plugin is applied first (since in `upstream`) and saved as a loadable artifact
+app.export('.')
+```
