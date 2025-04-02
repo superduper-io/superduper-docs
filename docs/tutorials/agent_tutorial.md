@@ -1,6 +1,6 @@
 # Real time, database integrated agents, with integrated actions
 
-What is an AI agent? This is a difficult question to answer. In principle AI agents are relevant for a huge range of computer bound knowledge work, in which the individual component steps can be accessed programmatically. The range of possible agents is limited only by the tools we have to connect data, AI models in a useful environment. A very powerful-scuh environment is `superduper`.
+AI agents are relevant for a huge range of computer bound knowledge work, in which the individual component steps can be accessed programmatically. The range of possible agents is limited only by the tools we have to connect data, AI models in a useful environment. A very powerful-scuh environment is `superduper`.
 
 In particular, when knowledge work involves reacting to data in real time, and acting, making decisions, informing and inferring based on that data, then `superduper` is exactly the right place to start. 
 
@@ -14,6 +14,11 @@ This is show-cased in the following example:
 When considering this workflow, you will see that agents don't just need to be restricted to agent-chat, with inline actions and tool-choice.
 
 Create a searchapi.io key [here](https://www.searchapi.io/).
+
+
+```python
+!pip install litellm
+```
 
 
 ```python
@@ -131,7 +136,7 @@ To run this cron-job, as usual, run `db.apply`:
 
 
 ```python
-db.apply(researcher)
+db.apply(researcher, force=True)
 ```
 
 To complement the research carried out by the cron-job, we'll set up a search index:
@@ -177,7 +182,7 @@ the researcher thread (created by `db.apply`) updates the vector-index.
 
 
 ```python
-db.apply(vector_index)
+db.apply(vector_index, force=True)
 ```
 
 In the following cells we create another component which listens for incoming data to the `Page` table, 
@@ -256,7 +261,14 @@ it will respond to incoming data in the researcher thread, as well as checking t
 
 
 ```python
-db.apply(notification)
+db.insert([
+    PersonOfInterest(email='timo@superduper-company.com', name='Timo Hagenow', description='Tech. Entrepreneur')
+])
+```
+
+
+```python
+db.apply(notification, force=True)
 ```
 
 Are you happy with your setup? The whole setup can now be saved/ bundled as an `Application`:
