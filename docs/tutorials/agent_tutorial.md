@@ -22,6 +22,11 @@ Create a searchapi.io key [here](https://www.searchapi.io/).
 
 
 ```python
+!pip superduper-framework
+```
+
+
+```python
 import bs4
 import os
 import requests
@@ -121,6 +126,11 @@ db.insert([
 ])
 ```
 
+
+```python
+db['Page'].distinct('link')
+```
+
 Now we will set-up the cron-job on the basis of our implementation above:
 
 
@@ -185,6 +195,11 @@ the researcher thread (created by `db.apply`) updates the vector-index.
 db.apply(vector_index, force=True)
 ```
 
+
+```python
+db.show()
+```
+
 In the following cells we create another component which listens for incoming data to the `Page` table, 
 and if the data fits a certain configurable description, will trigger a notification via a webhook. 
 
@@ -218,7 +233,9 @@ class Notification(CDC):
         return self._run(text, 'Summarize this text in 20 words or less; add no padding or preamble, just the summary')
 
     def send_notification(self, summary, email):
-        logging.info(f'sending message: {summary} to {email}')
+        self.db['NotificationMsg'].insert([{
+            'msg': f'sending message: {summary} to {email}'
+        }])
         return
         response = requests.post(
             'https://hooks.zapier.com/hooks/catch/225673205/1234oq/',
@@ -239,6 +256,7 @@ class Notification(CDC):
                 email = self.db['PersonOfInterest'].get(primary_id=r['source'])['email']
                 messages.append({'summary': summary, 'email': email})
 
+        import pdb; pdb.set_trace()
         for message in messages:
             self.send_notification(**message)
         return messages
@@ -247,12 +265,15 @@ class Notification(CDC):
 
 ```python
 notification = Notification(
-    'notification', 
+    'notification-3', 
     prompt='Tell me if this text concerns software engineering in some way (yes/no - lowercase); here is the text:\n',
     cdc_table='Page',
     test=lambda x: x.lower().strip() == 'yes',
     key='txt',
     db=db,
+    upstream=[
+        Table('NotificationMsg', fields={'msg': 'str'})
+    ]
 )
 ```
 
@@ -268,7 +289,34 @@ db.insert([
 
 
 ```python
+import pandas
+
+pandas.DataFrame(db['PersonOfInterest'].execute())
+```
+
+
+```python
 db.apply(notification, force=True)
+```
+
+
+```python
+db['NotificationMsg'].execute()
+```
+
+
+```python
+db['Page'].like({'txt': 'Hamburg Entrepreneur'}, vector_index='search_the_research', n=1).execute()
+```
+
+
+```python
+db.show('VectorIndex')
+```
+
+
+```python
+db['Page'].get()
 ```
 
 Are you happy with your setup? The whole setup can now be saved/ bundled as an `Application`:
@@ -279,8 +327,18 @@ from superduper import Application
 
 application = Application(
     'online_trend_notification',
-    components=[notification, vector_index, listener],
+    components=[notification, vector_index, researcher],
 )
+```
+
+
+```python
+application.encode()
+```
+
+
+```python
+application.export('saved_app')
 ```
 
 The next time you do this, you can apply everything in one go, like this:

@@ -34,6 +34,8 @@ const sidebars = {
         'tutorials/training',
         'tutorials/custom_serialization',
         'tutorials/application_template',
+        'tutorials/superduper_protocol',
+        'tutorials/auto_component',
       ],
     },
     {
