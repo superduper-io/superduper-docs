@@ -174,12 +174,12 @@ const sidebars = {
         {
           type: 'link',
           label: 'Change log',
-          href: 'https://raw.githubusercontent.com/superduper.io/superduper/main/CHANGELOG.md',
+          href: 'https://raw.githubusercontent.com/superduper-io/superduper/main/CHANGELOG.md',
         },
         {
           type: 'link',
           label: 'Source on GitHub',
-          href: 'https://github.com/superduper.io/superduper',
+          href: 'https://github.com/superduper-io/superduper',
         },
       ],
     },
