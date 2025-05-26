@@ -104,6 +104,7 @@ const sidebars = {
         'data_plugins/mongodb',
         'data_plugins/sql',
         'data_plugins/snowflake',
+        'data_plugins/redis',
       ],
     },
     {
