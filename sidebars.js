@@ -90,6 +90,7 @@ const sidebars = {
         'customize/training_models',
         'customize/cdc',
         'customize/template',
+        'customize/cluster',
       ],
     },
     {
