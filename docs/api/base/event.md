@@ -53,6 +53,13 @@ CreateTable(self,
 
 Class for table creation events.
 
+## `Event` 
+
+```python
+Event(self) -> None
+```
+Base class for all events.
+
 ## `PutComponent` 
 
 ```python
@@ -61,6 +68,7 @@ PutComponent(self,
      context: str,
      component: str,
      identifier: str,
+     version: int,
      uuid: str,
      service: str) -> None
 ```
@@ -69,10 +77,34 @@ PutComponent(self,
 | context | the component context of creation. |
 | component | the type of component to be created |
 | identifier | the identifier of the component to be created |
+| version | the version of the component to be created |
 | uuid | the uuid of the component to be created |
 | service | the service to put the component on |
 
 Class for putting component on cluster.
+
+## `Teardown` 
+
+```python
+Teardown(self,
+     *,
+     component: str,
+     identifier: str,
+     uuid: str,
+     version: int,
+     context: str | None = None,
+     services: List[str] = <factory>) -> None
+```
+| Parameter | Description |
+|-----------|-------------|
+| component | the type of component to be created |
+| identifier | the identifier of the component to be deleted |
+| uuid | the uuid of the component to be deleted |
+| version | the version of the component to be deleted |
+| context | the context of the component to be deleted |
+| services | the services to be used for tear down |
+
+Class for component tear down events.
 
 ## `Update` 
 
@@ -141,11 +173,4 @@ Change(self,
 | queue | which table was affected |
 
 Class for streaming change events.
-
-## `Event` 
-
-```python
-Event(self) -> None
-```
-Base class for all events.
 

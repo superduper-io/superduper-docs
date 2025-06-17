@@ -2,6 +2,30 @@
 
 [Source code](https://github.com/superduper-io/superduper/blob/main/superduper/components/component.py)
 
+## `build_context` 
+
+```python
+build_context(vars_dict: dict[str,
+     typing.Any] | None)
+```
+| Parameter | Description |
+|-----------|-------------|
+| vars_dict | Dictionary of variables to set for the build context. |
+
+Context manager to set build variables for components.
+
+## `current_build_vars` 
+
+```python
+current_build_vars(default: Optional[Any] = None) -> dict[str,
+     typing.Any] | None
+```
+| Parameter | Description |
+|-----------|-------------|
+| default | Default value to return if no variables are set. |
+
+Get the current build variables.
+
 ## `ensure_setup` 
 
 ```python

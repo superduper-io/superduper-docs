@@ -17,7 +17,7 @@ The component may be reloaded, without any type of prior initialization, in anot
 ```python
 from superduper import Component
 
-component = Component.read('<path_to_export>')
+component = Component.read('<path_to_export>', **variables)
 ```
 
 The component may be then reused with `db.apply`.
@@ -29,43 +29,30 @@ To this end, Superduper includes the `Application` component, which may be used 
 together.
 
 ```python
-app = Application('my-app', components=[my_model, my_cdc, my_vector_index])
+app = Application('my-app', components=[my_model, my_cdc, my_vector_index], variables={'my_variable': 'hello'})
 ```
 
 Once bundled as an `Application`, the components inside may be managed together.
 
-For example, all components in the application may be shown:
+For example, all components in the application may be removed in one shot:
 
 ```python
-db.show(application='my-app')
+db.remove(component='Application', identifier='my-app', recursive=True)
 ```
 
-and all components may be removed in a single command:
+## Using variables inside a `Component`
+
+If a `Component` has the `variables` parameter, then these variables 
+may be referred to by any sub-`Component`. (For example in `Application`.)
 
 ```python
-db.remove('Application', 'my-app', recursive=True)
-```
-
-## Creating `Template` instances from `Component`
-
-
-In order to re-use `Component` instances with certain values replaced with new values, 
-for example, the location of data, Superduper provides an additional helper component: `Template`.
-
-Create the template:
-
-```python
-t = Template('my-template', substitutions={'my_value': 'my_variable'}, templte=app)
-
-t.export('<path_to_export>')
+app.export('<path_to_export>')
 ```
 
 Load the template and reuse:
 
 ```python
-t = Template.read('<path_to_export>')
-
-app = t(my_variable='new_value')
+app = Component.read('<path_to_export>', my_variable='goodbye')
 
 db.apply(app)
 ```

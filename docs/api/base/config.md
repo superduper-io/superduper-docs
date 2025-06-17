@@ -27,14 +27,12 @@ Config(self,
      cluster_engine: str = 'local',
      retries: superduper.base.config.Retry = <factory>,
      downloads: superduper.base.config.Downloads = <factory>,
-     log_level: superduper.base.config.LogLevel = <LogLevel.INFO: 'INFO'>,
+     log_level: superduper.base.config.LogLevel = <LogLevel.USER: 'USER'>,
      logging_type: superduper.base.config.LogType = <LogType.SYSTEM: 'SYSTEM'>,
      log_colorize: bool = True,
      log_hostname: bool = True,
      bytes_encoding: str = 'bytes',
      force_apply: bool = False,
-     datatype_presets: superduper.base.config.DataTypePresets = <factory>,
-     json_native: bool = True,
      output_prefix: str = '_outputs__',
      vector_search_kwargs: Dict = <factory>) -> None
 ```
@@ -54,28 +52,12 @@ Config(self,
 | logging_type | The type of logging to use |
 | log_hostname | Whether to include the hostname in the logs |
 | force_apply | Whether to force apply the configuration |
-| datatype_presets | Presets to be applied for default types of data |
-| json_native | Whether the databackend supports json natively or not. |
 | log_colorize | Whether to colorize the logs |
 | bytes_encoding | (Deprecated) |
 | output_prefix | The prefix for the output table and output field key |
 | vector_search_kwargs | The keyword arguments to pass to the vector search |
 
 The data class containing all configurable superduper values.
-
-## `DataTypePresets` 
-
-```python
-DataTypePresets(self,
-     vector: str | None = None) -> None
-```
-| Parameter | Description |
-|-----------|-------------|
-| vector | BaseDataType to encode vectors. |
-
-Paths of default types of data.
-
-Overrides DataBackend.datatype_presets.
 
 ## `Downloads` 
 

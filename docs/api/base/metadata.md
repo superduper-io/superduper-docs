@@ -37,6 +37,29 @@ ArtifactRelations(self,
 
 Artifact relations table.
 
+## `Deployment` 
+
+```python
+Deployment(self,
+     *,
+     identifier: str,
+     uuid: str = <factory>,
+     component: str,
+     version: int,
+     status: str = 'running',
+     context: str) -> None
+```
+| Parameter | Description |
+|-----------|-------------|
+| identifier | identifier of the deployment |
+| uuid | UUID of the deployment |
+| component | type of component |
+| version | version of the component |
+| status | status of the deployment |
+| context | context of the deployment |
+
+Deployment table.
+
 ## `ParentChildAssociations` 
 
 ```python

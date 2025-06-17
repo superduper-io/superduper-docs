@@ -6,7 +6,7 @@
 
 ```python
 build_streaming_graph(table,
-     db: 'Datalayer')
+     db: 'Datalayer') -> networkx.classes.digraph.DiGraph
 ```
 | Parameter | Description |
 |-----------|-------------|
@@ -18,6 +18,9 @@ Build a streaming graph from a table.
 The graph has as each node a component which
 ingests from the table, or ingests from
 a component which ingests from the table (etc.).
+
+This function constructs a directed graph representing the data flow
+between components connected to the specified table.
 
 ## `CDC` 
 

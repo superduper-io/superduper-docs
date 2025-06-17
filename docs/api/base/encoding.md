@@ -16,8 +16,9 @@ EncodeContext(self,
      db: Optional[ForwardRef('Datalayer')] = None,
      leaves_to_keep: Sequence[ForwardRef('Base')] = <factory>,
      metadata: bool = True,
+     keep_variables: bool = False,
      defaults: bool = True,
-     cfg: Optional[superduper.base.config.Config] = None) -> None
+     export: bool = False) -> None
 ```
 | Parameter | Description |
 |-----------|-------------|
@@ -28,8 +29,9 @@ EncodeContext(self,
 | db | A Datalayer instance. |
 | leaves_to_keep | A sequence of Base instances to keep. |
 | metadata | Whether to include metadata. |
+| keep_variables | Whether to keep variables. |
 | defaults | Whether to include defaults. |
-| cfg | Configuration object. |
+| export | Whether in export mode. |
 
 Context for encoding and decoding data.
 

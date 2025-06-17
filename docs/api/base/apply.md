@@ -11,18 +11,33 @@ apply(db: 'Datalayer',
      Any],
      force: bool | None = None,
      wait: bool = False,
-     jobs: bool = True) -> 'Component'
+     jobs: bool = True,
+     do_apply: bool = True)
 ```
 | Parameter | Description |
 |-----------|-------------|
-| db | Datalayer instance |
-| object | Object to be stored. |
-| force | List of jobs which should execute before component initialization begins. |
-| wait | Blocks execution till create events finish. |
-| jobs | Whether to execute jobs or not. |
+| db | The Datalayer instance to use. |
+| object | The component to apply. |
+| force | Whether to force the application without confirmation. |
+| wait | Whether to wait for the component to be created. |
+| jobs | Whether to execute jobs after applying the component. |
+| do_apply | Whether to actually apply the component or just return the plan. |
 
-Add functionality in the form of components.
+Apply a `superduper.Component`.
 
-Components are stored in the configured artifact store
-and linked to the primary database through metadata.
+## `Plan` 
+
+```python
+Plan(self,
+     events: List[Union[superduper.base.event.Event,
+     ForwardRef('Job')]]) -> None
+```
+| Parameter | Description |
+|-----------|-------------|
+| events | A list of events to be executed. |
+
+A deployment plan that contains a list of events to be executed.
+
+This class is used to represent the deployment plan that will be executed
+by the cluster scheduler.
 

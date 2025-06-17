@@ -168,11 +168,6 @@ const config = {
             label: 'Documentation',
           },
           {
-            to: '/docs/category/templates/',
-            position: 'left',
-            label: 'Templates',
-          },
-          {
             href: '/docs/category/api/',
             label: 'API',
             position: 'left',
@@ -215,10 +210,6 @@ const config = {
               {
                 label: 'Documentation',
                 to: '/docs/category/get-started',
-              },
-              {
-                label: 'Templates',
-                to: '/docs/category/templates',
               },
               {
                 label: 'Blog',

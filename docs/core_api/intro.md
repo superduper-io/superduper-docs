@@ -22,15 +22,6 @@ db.apply(<ai_component>)
 <ai_component>.export('<path>')
 ```
 
-```python
-from superduper import Template
-template = Template(
-    '<template-name>',
-    component=<ai_component>,
-    substitutions={'<value_to_replace>': '<variable_name>', ...}
-)
-```
-
 ***Execute***
 
 Execute a query:

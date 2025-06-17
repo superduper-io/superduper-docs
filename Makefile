@@ -9,20 +9,12 @@ help: ## Display this help
 
 ##@ Builds
 
+build_api_docs: ## Build API docs
+	@echo "===> Building API docs <==="
+	-ln -s ../superduper/test .
+	python build_api_docs.py
+
 gen_docs: ## Generate Docs and API
 	@echo "===> Generate docusaurus docs and blog-posts <==="
 	npm i --legacy-peer-deps && npm run build
 	@echo "Build finished. The HTML pages are in docs/hr/build"
-
-DIRECTORY := ../superduper/templates
-FILES := $(shell ls $(DIRECTORY))
-
-compile_docs: ## Convert templates to markdown content
-	-ln -s ../superduper/test .
-	python build_api_docs.py
-	@for file in $(FILES); do \
-		echo "Processing $(DIRECTORY)/$$file..."; \
-		jupyter nbconvert $(DIRECTORY)/$$file/build.ipynb --clear-output; \
-		jupyter nbconvert $(DIRECTORY)/$$file/build.ipynb --to markdown; \
-		mv $(DIRECTORY)/$$file/build.md docs/templates/$$file.md; \
-	done

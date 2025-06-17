@@ -5,7 +5,7 @@
 ## `cluster_events` 
 
 ```python
-cluster_events(events: List[superduper.base.base.Base])
+cluster_events(events: List[superduper.base.event.Event])
 ```
 | Parameter | Description |
 |-----------|-------------|
@@ -16,7 +16,7 @@ Cluster events into table, create and job events.
 ## `consume_events` 
 
 ```python
-consume_events(events: List[superduper.base.base.Base],
+consume_events(events: List[superduper.base.event.Event],
      table: str,
      db: 'Datalayer',
      batch_size: int | None = None)

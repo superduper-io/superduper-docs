@@ -31,6 +31,43 @@ BaseDataType(self) -> None
 ```
 Base class for datatype.
 
+## `JSON` 
+
+```python
+JSON(self) -> None
+```
+Datatype for encoding json-able items.
+
+## `NativeVector` 
+
+```python
+NativeVector(self,
+     *,
+     dtype: str = 'float',
+     shape: int) -> None
+```
+| Parameter | Description |
+|-----------|-------------|
+| dtype | Datatype of encoded arrays. |
+| shape | Shape of array. |
+
+Datatype for encoding vectors which are supported as list by databackend.
+
+## `Vector` 
+
+```python
+Vector(self,
+     *,
+     dtype: str = 'float64',
+     shape: int) -> None
+```
+| Parameter | Description |
+|-----------|-------------|
+| dtype | Datatype of encoded arrays. |
+| shape | Shape of array. |
+
+Vector meta-datatype for encoding vectors ready for search.
+
 ## `BaseType` 
 
 ```python
@@ -126,6 +163,27 @@ ComponentList(self) -> None
 ```
 Datatype for encoding lists which are supported as list by databackend.
 
+## `ComponentRef` 
+
+```python
+ComponentRef(self,
+     identifier: str,
+     db: 'Datalayer' = None,
+     *,
+     component: str,
+     uuid: str,
+     object: Optional[superduper.components.component.Component] = None) -> None
+```
+| Parameter | Description |
+|-----------|-------------|
+| identifier | Identifier of the component. |
+| db | The Datalayer. |
+| component | Component class name. |
+| uuid | UUID of the component. |
+| object | The component object, if already loaded. |
+
+Placeholder for a component reference.
+
 ## `Dill` 
 
 ```python
@@ -173,28 +231,6 @@ FileDict(self) -> None
 ```
 Datatype for encoding dictionaries of files.
 
-## `JSON` 
-
-```python
-JSON(self) -> None
-```
-Datatype for encoding json-able items.
-
-## `NativeVector` 
-
-```python
-NativeVector(self,
-     *,
-     dtype: str = 'float',
-     shape: int) -> None
-```
-| Parameter | Description |
-|-----------|-------------|
-| dtype | Datatype of encoded arrays. |
-| shape | Shape of array. |
-
-Datatype for encoding vectors which are supported as list by databackend.
-
 ## `Pickle` 
 
 ```python
@@ -222,19 +258,4 @@ Saveable(self,
 | db | The Datalayer. |
 
 A Saveable base class.
-
-## `Vector` 
-
-```python
-Vector(self,
-     *,
-     dtype: str = 'float64',
-     shape: int) -> None
-```
-| Parameter | Description |
-|-----------|-------------|
-| dtype | Datatype of encoded arrays. |
-| shape | Shape of array. |
-
-Vector meta-datatype for encoding vectors ready for search.
 

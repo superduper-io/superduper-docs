@@ -13,7 +13,7 @@ Superduper is available on [PyPi.org](https://pypi.org/project/superduper-framew
 pip install superduper-framework
 ```
 
-:::danger
+:::warning
 **Note that Superduper is not installed with `pip install superduper`.**
 There is another unrelated package occupying this namespace.
 :::
@@ -27,48 +27,40 @@ example, to install the MongoDB bindings, do:
 pip install superduper_mongodb
 ```
 
-## Apply your first template
-
-Note that Superduper allows developers to completely 
-own their applications, self-hosting all models and data, if so wished. 
-To view which templates are available, type:
+## Connect to your configured databackend
 
 ```python
-from superduper import Template
-
-Template.download('simple_rag')
+db = superduper()
 ```
 
-Then in a terminal install the requirements and set your OpenAI key:
+## Add some data
 
 ```python
-pip install -r templates/simple_rag/requirements.txt
-export OPENAI_API_KEY=sk-...
+import lorem
+from superduper import Base
+
+class MyTable(Base):
+    x: str
+
+db.insert([MyTable(x=lorem.sentence()) for _ in range(10)])
 ```
 
-To use a template do the following:
+## Apply your first `Component`
+
+Here is a simple inbuilt `superduper.Component` which computes outputs 
+on the inserted data.
 
 ```python
-from superduper import superduper, Template
+model = ObjectModel('test_model', lambda x: 'TEST OUTPUT ' + x)
+listener = Listener('test_listener', select=db['MyTable'], key='x', model=model)
 
-t = Template.read('templates/simple_rag')
-
-db.apply(t)
-
-app = t()
-
-db.apply(app)
+db.apply(listener)
 ```
 
-Once this command has successfully executed, test the results.
-In this case, the template is the simplest form of an agent 
-deployed on your data, known as "retrievial-augmented-generation: RAG".
+## Reload the `Component` and query the outputs
 
 ```python
-# This will depend highly on the template
-# View the available components with `db.show()`
-
-db.load('RAGModel', 'simple_rag')
+listener = db.load('Listener', 'test_listener')
+db[listener.outputs].execute()
 ```
 
-You can see how the template was built by checking out the notebook in `templates/simple_rag/build.ipynb`.

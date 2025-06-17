@@ -113,9 +113,8 @@ db.apply(agent)
 **Package**
 
 ```python
-application = Application('my-agent-app', components=[agent, vector_index])
-template = Template('my-agent-template', component=app, substitutions={'documents': 'table'})
-template.export('my-analysis')
+application = Application('my-agent-app', components=[agent, vector_index], variables={'table': 'documents'})
+application.export('my-analysis')
 ```
 
 **Execute**

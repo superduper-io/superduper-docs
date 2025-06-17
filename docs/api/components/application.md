@@ -12,9 +12,7 @@ Application(self,
      db: dataclasses.InitVar[typing.Optional[ForwardRef('Datalayer')]] = None,
      *,
      components: List[superduper.components.component.Component],
-     link: Optional[str] = None,
-     build_variables: Optional[Dict] = None,
-     build_template: str | None = None) -> None
+     variables: Optional[Dict] = None) -> None
 ```
 | Parameter | Description |
 |-----------|-------------|
@@ -23,9 +21,7 @@ Application(self,
 | compute_kwargs | Keyword arguments to manage the compute environment. |
 | db | Datalayer instance. Datalayer instance. |
 | components | List of components to group together and apply to `superduper`. |
-| link | A reference link to web app serving the application i.e. streamlit, gradio, etc |
-| build_variables | Variables which were supplied to a template to build. |
-| build_template | Template which was used to build. |
+| variables | Variables which are used inside the application. |
 
 A placeholder to hold list of components with associated funcionality.
 
