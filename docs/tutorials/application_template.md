@@ -1,14 +1,10 @@
-# Reusable Superduper applications and templates
+# Reusable Superduper applications 
 
-Superduper includes two components, `Application` and `Template`, to help users more easily build reusable Superduper applications.
+The `Component` abstraction is designed with the aim to make `superduper` components easy to re-use in new scenarios. 
+In order to do this, developers need only add the `variables` parameter to their `Component` implementations. `superduper` pre-ships with 
+the `Application` component, which includes `variables`, as a starting point.
 
-**`Application`**
-
-Once an `Application` is built, it can be exported and distributed to different locations for direct deployment. It can also be deployed directly using Superduper Enterprise for a highly available and high-performance deployment approach
-
-**`Template`**
-
-During use, if an Application needs to be turned into a template, the variable values within the `Application` can be set as parameters. When applying the template, new values can be filled in to create a new Application.
+During use, if an Application needs to be turned into a re-usable template, the variable values within the `Application` can be set as parameters. When re-loading the `Application`, new values can be filled in to create a new `Application`, with altered state.
 
 :::info
 Let’s take building an RAG application based on Superduper documentation as an example to demonstrate how to construct an application, as well as how to export and reuse it.
@@ -36,7 +32,7 @@ Insert data containing a document’s URL.
 urls = [
     "https://docs.superduper.io/docs/intro",
 ]
-db["example_table"].insert([{"url": url} for url in urls]).execute()
+db["<var:table_name>"].insert([{"url": url} for url in urls]).execute()
 ```
 
 Install some necessary dependencies.
@@ -73,14 +69,15 @@ def get_page(url):
 
 
 ```python
-from superduper import ObjectModel
+from superduper import ObjectModel, Listener
 
 model_page = ObjectModel(identifier="page", object=get_page)
 
-listener_page = model_page.to_listener(
-    predict_id="page", 
+listener_page = Listener(
+    'page',
+    model=model_page,
     key="url", 
-    select=db["example_table"].select()
+    select=db["<var:table_name>"].select()
 )
 
 db.apply(listener_page)
@@ -120,8 +117,9 @@ from superduper import ObjectModel
 
 model_chunk = ObjectModel(identifier="chunk", object=chunk, flatten=True)
 
-listener_chunk = model_chunk.to_listener(
-    predict_id="chunk",
+listener_chunk = Listener(
+    "chunk",
+    model=model_chunk,
     key=listener_page.outputs,
     select=listener_page.outputs_select，
 )
@@ -134,12 +132,13 @@ Use OpenAI embeddings to build a vector index.
 
 ```python
 from superduper_openai import OpenAIEmbedding
-from superduper import VectorIndex
+from superduper import VectorIndex, Listener
 
-model_embedding = OpenAIEmbedding(identifier='text-embedding-ada-002')   
+model_embedding = OpenAIEmbedding(identifier='text-embedding-ada-002', datatype='vector[float64:1024]')   
 
-listener_embedding = model_embedding.to_listener(
-    predict_id="embedding",
+listener_embedding = Listener(
+    "embedding",
+    model=model_embedding,
     key=listener_chunk.outputs,
     select=db[listener_chunk.outputs]，
 )
@@ -164,7 +163,7 @@ from superduper_openai import OpenAIChatCompletion
 
 key = listener_chunk.outputs
 
-q = db[key].like(Document({key: "<var:prompt>"}), vector_index='my-index', n=5).select()
+q = db[key].like({key: "<var:prompt>"}, vector_index='my-index', n=5).select()
 
 def get_output(c):
     c = sorted(c, key=lambda x:x['score'], reverse=True)
@@ -175,13 +174,11 @@ prompt_template.db = db
 
 llm = OpenAIChatCompletion('gpt-3.5-turbo')
 rag = SequentialModel('rag', models=[prompt_template, llm])
-
-db.apply(rag)
 ```
 
 
 ```python
-print(rag.predict("What important additional aspects does Superduper include?"))
+
 ```
 
 Build an application using the build_from_db method, which will automatically package all components from the database into a single application.
@@ -190,7 +187,23 @@ Build an application using the build_from_db method, which will automatically pa
 ```python
 from superduper import Application
 
-application = Application.build_from_db(identifier="doc-qa", db=db)
+application = Application(
+    'doc-qa',
+    components=[rag, vector_index],
+    variables={'table_name': 'example_table'} # this signifies the default variable values.
+)
+```
+
+
+```python
+db.apply(application)
+```
+
+
+```python
+rag = db.load('SequentialModel', 'rag')
+
+print(rag.predict("What important additional aspects does Superduper include?"))
 ```
 
 ### Export application
@@ -220,9 +233,9 @@ db.show()
 
 
 ```python
-from superduper import Application
+from superduper import Component
 
-application = Application.read("exports/application/")
+application = Component.read("exports/application/", table_name='new_table')
 db.apply(application)
 ```
 
@@ -242,78 +255,4 @@ We can load the RAG model to perform predictions
 ```python
 rag = db.load("model", "rag")
 rag.predict("What integrations does Superduper include?")
-```
-
-## Template
-
-### Build Template
-
-We build a template based on the application and set the table name as a variable.
-
-Using `substitutions`, the corresponding values in the application can be replaced with variable identifiers.
-
-
-```python
-from superduper import Template
-
-template = Template(
-    'vector-search',
-    template=application,
-    substitutions={'example_table': 'table_name'},
-    template_variables=["table_name"]
-)
-```
-
-### Export Template
-
-
-```python
-template.export("exports/template")
-```
-
-
-```python
-!cat exports/template/component.json | jq .
-```
-
-### Reuse Template
-
-We load the template in a new database and use `table_name=transformers` to build a new application, which will be applied to the [Transformers documentation](https://huggingface.co/docs/transformers/index).
-
-
-```python
-from superduper import superduper
-db = superduper("mongodb://127.0.0.1:27017/test_db")
-db.drop(True, True)
-db.show()
-```
-
-
-```python
-from superduper import Template, Application
-
-template = Template.read("exports/template")
-
-application = template(table_name="transformers")
-
-db.apply(application)
-```
-
-
-```python
-urls = [
-    "https://huggingface.co/docs/transformers/serialization",
-]
-db["transformers"].insert([{"url": url} for url in urls]).execute()
-```
-
-Ask questions related to Transformers.
-
-
-```python
-from IPython.display import Markdown, display
-
-rag = db.load("model", "rag")
-response = rag.predict("How to export a Transformers model to ONNX with with optimum.onnxruntime")
-display(Markdown(response))
 ```
