@@ -125,7 +125,7 @@ const config = {
           // Remove this to remove the "edit this page" links.
           editUrl:
             'https://github.com/superduper-io/superduper/edit/main/docs/',
-          versions: {current: {label: 'Main branch'}},
+          versions: { current: { label: 'Main branch' } },
         },
         blog: false,
         theme: {
@@ -172,11 +172,11 @@ const config = {
             label: 'API',
             position: 'left',
           },
-          {
-            to: 'https://blog.superduper.io/',
-            label: 'Blog',
-            position: 'left',
-          },
+          // {
+          //   to: 'https://blog.superduper.io/',
+          //   label: 'Blog',
+          //   position: 'left',
+          // },
           {
             type: 'docsVersionDropdown',
             position: 'right',
@@ -211,10 +211,10 @@ const config = {
                 label: 'Documentation',
                 to: '/docs/category/get-started',
               },
-              {
-                label: 'Blog',
-                to: 'https://blog.superduper.io/',
-              },
+              // {
+              //   label: 'Blog',
+              //   to: 'https://blog.superduper.io/',
+              // },
             ],
           },
           {
@@ -286,14 +286,14 @@ const config = {
             'superduper docs, Superduper Docs, Superduper documentation, SuperduperDB documentation, SuperduperDB docs, SuperduperDB, Superduper, Superduper API, Superduper tutorials, Superduper guides, Superduper use cases',
         },
       ],
-      announcementBar: {
-        id: 'support_us',
-        content:
-          '📣 SuperDuperDB is now Superduper! Check out our new website superduper.io 📣',
-        backgroundColor: '#3074B7',
-        textColor: '#fff',
-        isCloseable: true,
-      },
+      // announcementBar: {
+      //   id: 'support_us',
+      //   content:
+      //     '📣 SuperDuperDB is now Superduper! Check out our new website superduper.io 📣',
+      //   backgroundColor: '#3074B7',
+      //   textColor: '#fff',
+      //   isCloseable: true,
+      // },
     }),
 };
 
